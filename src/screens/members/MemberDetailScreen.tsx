@@ -7,14 +7,14 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { RouteProp } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import api from '../../api/api';
 import { Member } from '../../types';
 
 
 type MemberDetailScreenProps = {
-  route: RouteProp<any, 'MemberDetail'>;
+  route: RouteProp<{ params: { memberId: string } }, 'MemberDetail'>;
 };
 
 const MemberDetailScreen: React.FC<MemberDetailScreenProps> = ({ route }) => {

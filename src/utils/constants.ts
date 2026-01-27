@@ -16,6 +16,7 @@ export const AUTH_ENDPOINTS = {
 export const MEMBER_ENDPOINTS = {
   GET_ALL: '/gym/members/all',
   GET_BY_ID: (id: number) => `/gym/members/${id}`,
+};
 
 // Trainer Endpoints
 export const TRAINER_ENDPOINTS = {
