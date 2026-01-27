@@ -1,0 +1,326 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { Icon } from 'react-native-paper';
+import api from '../../api/api';
+import { GYM_ENDPOINTS } from '../../utils/constants';
+
+const CreateGymScreen = () => {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const gymId = route.params?.gymId;
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    gymCode: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    openingTime: '06:00',
+    closingTime: '22:00',
+    isActive: true,
+  });
+
+  useEffect(() => {
+    if (gymId) {
+      fetchGymDetails();
+    }
+  }, [gymId]);
+
+  const fetchGymDetails = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get(GYM_ENDPOINTS.GET_BY_ID(gymId));
+      const gym = response.data;
+      setFormData({
+        name: gym.name || '',
+        gymCode: gym.gymCode || '',
+        email: gym.email || '',
+        phone: gym.phone || '',
+        address: gym.address || '',
+        city: gym.city || '',
+        state: gym.state || '',
+        pincode: gym.pincode || '',
+        openingTime: gym.openingTime || '06:00',
+        closingTime: gym.closingTime || '22:00',
+        isActive: gym.isActive !== false,
+      });
+    } catch (error) {
+      console.error('Error fetching gym:', error);
+      Alert.alert('Error', 'Failed to fetch gym details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.gymCode) {
+      Alert.alert('Error', 'Please enter gym name and code');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (gymId) {
+        // Update existing gym
+        await api.put(GYM_ENDPOINTS.UPDATE(gymId), formData);
+        Alert.alert('Success', 'Gym updated successfully');
+      } else {
+        // Create new gym
+        await api.post(GYM_ENDPOINTS.CREATE, formData);
+        Alert.alert('Success', 'Gym created successfully');
+      }
+      navigation.goBack();
+    } catch (error: any) {
+      console.error('Error saving gym:', error);
+      const message = error.response?.data?.message || 'Failed to save gym';
+      Alert.alert('Error', message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateField = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon source="arrow-left" size={24} color="#0F172A" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          {gymId ? 'Edit Gym' : 'Create Gym'}
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      <View style={styles.form}>
+        <Text style={styles.sectionTitle}>Basic Information</Text>
+        
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Gym Name *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter gym name"
+            value={formData.name}
+            onChangeText={(value) => updateField('name', value)}
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Gym Code *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., GYM001"
+            value={formData.gymCode}
+            onChangeText={(value) => updateField('gymCode', value.toUpperCase())}
+            autoCapitalize="characters"
+          />
+        </View>
+
+        <View style={styles.inputRow}>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.label}>Opening Time</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="06:00"
+              value={formData.openingTime}
+              onChangeText={(value) => updateField('openingTime', value)}
+            />
+          </View>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.label}>Closing Time</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="22:00"
+              value={formData.closingTime}
+              onChangeText={(value) => updateField('closingTime', value)}
+            />
+          </View>
+
+        <Text style={styles.sectionTitle}>Contact Information</Text>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="gym@example.com"
+            value={formData.email}
+            onChangeText={(value) => updateField('email', value)}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Phone</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="+91 9876543210"
+            value={formData.phone}
+            onChangeText={(value) => updateField('phone', value)}
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        <Text style={styles.sectionTitle}>Address</Text>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Address</Text>
+          <TextInput
+            style={[styles.input, { height: 80 }]}
+            placeholder="Full address"
+            value={formData.address}
+            onChangeText={(value) => updateField('address', value)}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
+
+        <View style={styles.inputRow}>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.label}>City</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="City"
+              value={formData.city}
+              onChangeText={(value) => updateField('city', value)}
+            />
+          </View>
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.label}>State</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="State"
+              value={formData.state}
+              onChangeText={(value) => updateField('state', value)}
+            />
+          </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Pincode</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="123456"
+            value={formData.pincode}
+            onChangeText={(value) => updateField('pincode', value)}
+            keyboardType="numeric"
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.saveButtonText}>
+              {gymId ? 'Update Gym' : 'Create Gym'}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    paddingTop: 40,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  form: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#0F172A',
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  saveButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
+
+export default CreateGymScreen;

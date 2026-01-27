@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Gym CRM Mobile",
+    "slug": "gym-crm-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#3B82F6"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.gymcrm"
+    },
+    "android": {
+      "package": "com.example.gymcrm"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}
+
