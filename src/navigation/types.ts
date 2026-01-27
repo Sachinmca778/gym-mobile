@@ -6,13 +6,20 @@ export type RootStackParamList = {
   Dashboard: undefined;
   Members: undefined;
   MemberDetail: { memberId: number };
+  CreateMember: undefined;
+  AssignMembership: undefined;
+  CreateMembershipPlan: undefined;
   Attendance: undefined;
   Memberships: undefined;
   Progress: undefined;
   Payments: undefined;
+  CreatePayment: undefined;
+  Profile: undefined;
   Trainers: undefined;
   Settings: undefined;
 };
+
+
 
 export type BottomTabParamList = {
   Dashboard: undefined;

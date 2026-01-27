@@ -81,13 +81,55 @@ export interface Attendance {
 export interface Payment {
   id: number;
   memberId: number;
+  memberName?: string;
+  membershipId?: number;
   amount: number;
-  paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'ONLINE';
+  paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'ONLINE' | 'BANK_TRANSFER';
   status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
-  notes: string;
-  transactionId: string;
+  notes?: string;
+  transactionId?: string;
   paymentDate: string;
+  dueDate?: string;
   createdAt: string;
+}
+
+export interface PaymentForm {
+  memberId: number;
+  membershipId?: number;
+  amount: number;
+  paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'ONLINE' | 'BANK_TRANSFER';
+  transactionId?: string;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+  paymentDate: string;
+  dueDate?: string;
+  notes?: string;
+}
+
+export interface PaymentSummary {
+  currentMonthAmount: number;
+  todayRevenue: number;
+  totalOverdueAmount: number;
+  pendingAmount: number;
+}
+
+export interface MemberSearchResult {
+  id: number;
+  memberCode: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  status: string;
+}
+
+export interface MembershipPlanSelect {
+  id: number;
+  name: string;
+  price: number;
+  durationMonths: number;
+  description: string;
+  features: string[];
+  isActive: boolean;
 }
 
 export interface ProgressTracking {
@@ -151,4 +193,80 @@ export interface RegisterRequest {
   lastName: string;
   role: string;
 }
+
+export interface MemberFormData {
+  // Personal Information
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER' | '';
+  
+  // Address
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  
+  // Emergency Contact
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelation: string;
+  
+  // Membership
+  membershipType: string;
+  startDate: string;
+  duration: string;
+  amount: string;
+  
+  // Health Information
+  medicalConditions: string;
+  allergies: string;
+  fitnessGoals: string;
+}
+
+// Member Membership Module Types
+export interface MemberMembership {
+  id: number;
+  memberId: number;
+  planId: number;
+  startDate: string;
+  endDate: string;
+  amountPaid: number;
+  gymId: number;
+  status: string;
+  autoRenewal: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemberMembershipForm {
+  memberId: number;
+  planId: number;
+  startDate: string;
+  endDate: string;
+  amountPaid: number;
+  autoRenewal: boolean;
+}
+
+export interface MemberSearchItem {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  memberCode: string;
+  status: string;
+}
+
+export interface MembershipPlanForm {
+  name: string;
+  description: string;
+  durationMonths: string;
+  price: string;
+  features: string;
+  isActive: boolean;
+}
+
+
 

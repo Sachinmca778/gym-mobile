@@ -13,10 +13,15 @@ import SignupScreen from '../screens/auth/SignupScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import MembersScreen from '../screens/members/MembersScreen';
 import MemberDetailScreen from '../screens/members/MemberDetailScreen';
+import CreateMemberScreen from '../screens/members/CreateMemberScreen';
+import AssignMembershipScreen from '../screens/memberships/AssignMembershipScreen';
+import CreateMembershipPlanScreen from '../screens/memberships/CreateMembershipPlanScreen';
 import AttendanceScreen from '../screens/attendance/AttendanceScreen';
 import MembershipsScreen from '../screens/memberships/MembershipsScreen';
 import ProgressScreen from '../screens/progress/ProgressScreen';
 import PaymentsScreen from '../screens/payments/PaymentsScreen';
+import CreatePaymentScreen from '../screens/payments/CreatePaymentScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
 import TrainersScreen from '../screens/trainers/TrainersScreen';
 
 import { RootStackParamList, BottomTabParamList } from './types';
@@ -79,9 +84,9 @@ const TabNavigator = () => {
         component={PaymentsScreen}
         options={{ title: 'Payments' }}
       />
-      <Tab.Screen 
+<Tab.Screen 
         name="Profile" 
-        component={TrainersScreen}
+        component={ProfileScreen}
         options={{ title: 'Profile' }}
       />
     </Tab.Navigator>
@@ -133,15 +138,40 @@ const AppNavigator = () => {
               component={MemberDetailScreen}
               options={{ title: 'Member Details' }}
             />
+<Stack.Screen 
+              name="CreateMember" 
+              component={CreateMemberScreen}
+              options={{ title: 'Add New Member' }}
+            />
+<Stack.Screen 
+              name="AssignMembership" 
+              component={AssignMembershipScreen}
+              options={{ title: 'Assign Membership' }}
+            />
             <Stack.Screen 
-              name="Memberships" 
+              name="CreateMembershipPlan" 
+              component={CreateMembershipPlanScreen}
+              options={{ title: 'Create Plan' }}
+            />
+            <Stack.Screen 
+              name="Memberships"
               component={MembershipsScreen}
               options={{ title: 'Memberships' }}
             />
-            <Stack.Screen 
+<Stack.Screen 
               name="Progress" 
               component={ProgressScreen}
               options={{ title: 'Progress' }}
+            />
+<Stack.Screen 
+              name="CreatePayment" 
+              component={CreatePaymentScreen}
+              options={{ title: 'Record Payment' }}
+            />
+            <Stack.Screen 
+              name="Profile" 
+              component={ProfileScreen}
+              options={{ title: 'Profile' }}
             />
             <Stack.Screen 
               name="Trainers" 

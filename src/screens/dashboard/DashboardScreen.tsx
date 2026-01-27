@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import * as SecureStore from 'expo-secure-store';
 import api from '../../api/api';
 import { DashboardSummary } from '../../types';
+import { API_BASE_URL } from '../../utils/constants';
 
 const DashboardScreen = () => {
   const navigation = useNavigation<any>();
@@ -38,6 +41,65 @@ const DashboardScreen = () => {
     setRefreshing(true);
     await fetchDashboardData();
     setRefreshing(false);
+  };
+
+  const clearAllStorage = async () => {
+    // Clear SecureStore
+    await SecureStore.deleteItemAsync('accessToken');
+    await SecureStore.deleteItemAsync('refreshToken');
+    await SecureStore.deleteItemAsync('userRole');
+    await SecureStore.deleteItemAsync('username');
+    await SecureStore.deleteItemAsync('userId');
+    
+    // Clear localStorage for web
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('username');
+      localStorage.removeItem('userId');
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Get token from SecureStore
+              const token = await SecureStore.getItemAsync('accessToken');
+              
+              if (token) {
+                // Call backend logout
+                await fetch(`${API_BASE_URL}/gym/auth/logout?token=${token}`, {
+                  method: 'POST',
+                });
+              }
+            } catch (error) {
+              console.error('Logout error:', error);
+            } finally {
+              // Clear all stored data
+              await clearAllStorage();
+              
+              // Reset navigation to login
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -94,9 +156,15 @@ const DashboardScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
+      {/* Header with Logout */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Welcome Back!</Text>
-        <Text style={styles.title}>Dashboard</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.greeting}>Welcome Back!</Text>
+          <Text style={styles.title}>Dashboard</Text>
+        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Icon source="logout" size={20} color="#EF4444" />
+        </TouchableOpacity>
       </View>
 
       {/* Stats Grid */}
@@ -167,7 +235,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 24,
+  },
+  headerLeft: {
+    flex: 1,
   },
   greeting: {
     fontSize: 16,
@@ -177,6 +251,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#0F172A',
+  },
+  logoutButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   statsGrid: {
     flexDirection: 'row',

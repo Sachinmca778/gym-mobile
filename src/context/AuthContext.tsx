@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as React from 'react';
+import axios from 'axios';
 
 import api from '../api/api';
 import { User, AuthRequest, AuthResponse } from '../types';
+import { API_BASE_URL } from '../utils/constants';
 
 // SecureStore wrapper with fallback for web
 const secureStore = {
@@ -137,17 +139,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await api.post('/gym/auth/logout');
+      // Get the token from secureStore
+      const token = await secureStore.getItemAsync('accessToken');
+      
+      // Use fresh axios instance without interceptors to avoid auth issues
+      if (token) {
+        await axios.post(`${API_BASE_URL}/gym/auth/logout?token=${encodeURIComponent(token)}`);
+      }
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error('Backend logout error, clearing local data:', err);
+      // Continue with local logout even if backend fails
     } finally {
-      // Clear stored data
+      // Clear stored data from both SecureStore and localStorage
       await secureStore.deleteItemAsync('accessToken');
       await secureStore.deleteItemAsync('refreshToken');
       await secureStore.deleteItemAsync('userRole');
       await secureStore.deleteItemAsync('username');
       await secureStore.deleteItemAsync('userId');
       await secureStore.deleteItemAsync('memberId');
+      
+      // Also clear from localStorage (used by api interceptor)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('username');
+        localStorage.removeItem('userId');
+      }
+      
       setUser(null);
     }
   };
