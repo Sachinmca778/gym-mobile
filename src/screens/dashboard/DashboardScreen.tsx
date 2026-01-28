@@ -12,15 +12,20 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import * as SecureStore from 'expo-secure-store';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../api/api';
 import { DashboardSummary } from '../../types';
 import { API_BASE_URL } from '../../utils/constants';
+import { getRolePermissions } from '../../utils/permissions';
 
 const DashboardScreen = () => {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+
+  const permissions = getRolePermissions(user?.role || '');
 
   useEffect(() => {
     fetchDashboardData();
@@ -110,43 +115,91 @@ const DashboardScreen = () => {
     );
   }
 
-  const stats = [
-    {
+  const getStats = () => {
+    const baseStats = [];
+
+    // All roles can see member stats
+    baseStats.push({
       title: 'Total Members',
       value: summary?.totalMembers || 0,
       icon: 'account-group',
       color: '#3B82F6',
       change: '+12%',
-    },
-    {
+    });
+
+    baseStats.push({
       title: 'Active Members',
       value: summary?.activeMembers || 0,
       icon: 'check-circle',
       color: '#10B981',
       change: '+8%',
-    },
-    {
-      title: 'Monthly Revenue',
-      value: `₹${summary?.totalPaymentsCurrentMonth || 0}`,
-      icon: 'currency-inr',
-      color: '#F59E0B',
-      change: '+15%',
-    },
-    {
-      title: 'Expiring Soon',
-      value: summary?.expiringMembersCount || 0,
-      icon: 'alert',
-      color: '#EF4444',
-      change: '-5%',
-    },
-  ];
+    });
 
-  const quickActions = [
-    { title: 'Add Member', icon: 'account-plus', color: '#3B82F6', screen: 'Members' },
-    { title: 'Attendance', icon: 'check-circle', color: '#10B981', screen: 'Attendance' },
-    { title: 'Memberships', icon: 'card-membership', color: '#8B5CF6', screen: 'Memberships' },
-    { title: 'Payments', icon: 'credit-card', color: '#F59E0B', screen: 'Payments' },
-  ];
+    // Only show financial stats for roles that can view financial reports
+    if (permissions.canViewFinancialReports) {
+      baseStats.push({
+        title: 'Monthly Revenue',
+        value: `₹${summary?.totalPaymentsCurrentMonth || 0}`,
+        icon: 'currency-inr',
+        color: '#F59E0B',
+        change: '+15%',
+      });
+    }
+
+    // Show expiring members for roles that can manage members
+    if (permissions.canViewAllMembers || permissions.canViewAssignedMembers) {
+      baseStats.push({
+        title: 'Expiring Soon',
+        value: summary?.expiringMembersCount || 0,
+        icon: 'alert',
+        color: '#EF4444',
+        change: '-5%',
+      });
+    }
+
+    return baseStats;
+  };
+
+  const getQuickActions = () => {
+    const actions = [];
+
+    if (permissions.canCreateMember) {
+      actions.push({ title: 'Add Member', icon: 'account-plus', color: '#3B82F6', screen: 'CreateMember' });
+    }
+
+    if (permissions.canViewMembers) {
+      actions.push({ title: 'Members', icon: 'account-group', color: '#3B82F6', screen: 'Members' });
+    }
+
+    if (permissions.canViewAttendance) {
+      actions.push({ title: 'Attendance', icon: 'check-circle', color: '#10B981', screen: 'Attendance' });
+    }
+
+    if (permissions.canViewMemberships) {
+      actions.push({ title: 'Memberships', icon: 'card-membership', color: '#8B5CF6', screen: 'Memberships' });
+    }
+
+    if (permissions.canViewPayments) {
+      actions.push({ title: 'Payments', icon: 'credit-card', color: '#F59E0B', screen: 'Payments' });
+    }
+
+    if (permissions.canViewProgress) {
+      actions.push({ title: 'Progress', icon: 'chart-line', color: '#EC4899', screen: 'Progress' });
+    }
+
+    if (permissions.canViewTrainers) {
+      actions.push({ title: 'Trainers', icon: 'account-tie', color: '#6366F1', screen: 'Trainers' });
+    }
+
+    if (permissions.canViewGyms) {
+      actions.push({ title: 'Gyms', icon: 'dumbbell', color: '#EC4899', screen: 'Gyms' });
+    }
+
+    return actions;
+  };
+
+  const stats = getStats();
+  const quickActions = getQuickActions();
 
   return (
     <ScrollView

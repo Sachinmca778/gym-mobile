@@ -259,6 +259,37 @@ export interface MemberSearchItem {
   status: string;
 }
 
+export interface Gym {
+  id: number;
+  gymCode: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  isActive: boolean;
+  openingTime?: string;
+  closingTime?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GymForm {
+  gymCode: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  openingTime: string;
+  closingTime: string;
+  isActive: boolean;
+}
+
 export interface MembershipPlanForm {
   name: string;
   description: string;

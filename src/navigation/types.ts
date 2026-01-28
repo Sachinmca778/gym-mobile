@@ -15,7 +15,11 @@ export type RootStackParamList = {
   Payments: undefined;
   CreatePayment: undefined;
   Profile: undefined;
+  Gyms: undefined;
+  CreateGym: { gymId?: number };
   Trainers: undefined;
+  TrainerDetail: { trainerId: number };
+  CreateTrainer: { trainer?: any };
   Settings: undefined;
 };
 

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Icon } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
+import { canAccessScreen } from '../utils/permissions';
 
 // Auth Screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -21,8 +22,12 @@ import MembershipsScreen from '../screens/memberships/MembershipsScreen';
 import ProgressScreen from '../screens/progress/ProgressScreen';
 import PaymentsScreen from '../screens/payments/PaymentsScreen';
 import CreatePaymentScreen from '../screens/payments/CreatePaymentScreen';
+import GymsScreen from '../screens/gyms/GymsScreen';
+import CreateGymScreen from '../screens/gyms/CreateGymScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import TrainersScreen from '../screens/trainers/TrainersScreen';
+import TrainerDetailScreen from '../screens/trainers/TrainerDetailScreen';
+import CreateTrainerScreen from '../screens/trainers/CreateTrainerScreen';
 
 import { RootStackParamList, BottomTabParamList } from './types';
 
@@ -30,6 +35,22 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 const TabNavigator = () => {
+  const { user } = useAuth();
+
+  const renderTabScreen = (name: string, component: any, options: any) => {
+    if (canAccessScreen(user?.role || '', name)) {
+      return (
+        <Tab.Screen
+          key={name}
+          name={name}
+          component={component}
+          options={options}
+        />
+      );
+    }
+    return null;
+  };
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -64,41 +85,35 @@ const TabNavigator = () => {
         headerTintColor: '#FFFFFF',
       })}
     >
-      <Tab.Screen 
-        name="Dashboard" 
-        component={DashboardScreen}
-        options={{ title: 'Dashboard' }}
-      />
-      <Tab.Screen 
-        name="Members" 
-        component={MembersScreen}
-        options={{ title: 'Members' }}
-      />
-      <Tab.Screen 
-        name="Attendance" 
-        component={AttendanceScreen}
-        options={{ title: 'Attendance' }}
-      />
-      <Tab.Screen 
-        name="Payments" 
-        component={PaymentsScreen}
-        options={{ title: 'Payments' }}
-      />
-<Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen}
-        options={{ title: 'Profile' }}
-      />
+      {renderTabScreen('Dashboard', DashboardScreen, { title: 'Dashboard' })}
+      {renderTabScreen('Members', MembersScreen, { title: 'Members' })}
+      {renderTabScreen('Attendance', AttendanceScreen, { title: 'Attendance' })}
+      {renderTabScreen('Payments', PaymentsScreen, { title: 'Payments' })}
+      {renderTabScreen('Profile', ProfileScreen, { title: 'Profile' })}
     </Tab.Navigator>
   );
 };
 
 const AppNavigator = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return null; // Or show a loading screen
   }
+
+  const renderStackScreen = (name: keyof RootStackParamList, component: any, options: any) => {
+    if (canAccessScreen(user?.role || '', name)) {
+      return (
+        <Stack.Screen
+          key={name}
+          name={name}
+          component={component}
+          options={options}
+        />
+      );
+    }
+    return null;
+  };
 
   return (
     <NavigationContainer>
@@ -115,69 +130,37 @@ const AppNavigator = () => {
       >
         {!isAuthenticated ? (
           <>
-            <Stack.Screen 
-              name="Login" 
+            <Stack.Screen
+              name="Login"
               component={LoginScreen}
               options={{ headerShown: false }}
             />
-            <Stack.Screen 
-              name="Signup" 
+            <Stack.Screen
+              name="Signup"
               component={SignupScreen}
               options={{ headerShown: false }}
             />
           </>
         ) : (
           <>
-            <Stack.Screen 
-              name="Main" 
+            <Stack.Screen
+              name="Main"
               component={TabNavigator}
               options={{ headerShown: false }}
             />
-            <Stack.Screen 
-              name="MemberDetail" 
-              component={MemberDetailScreen}
-              options={{ title: 'Member Details' }}
-            />
-<Stack.Screen 
-              name="CreateMember" 
-              component={CreateMemberScreen}
-              options={{ title: 'Add New Member' }}
-            />
-<Stack.Screen 
-              name="AssignMembership" 
-              component={AssignMembershipScreen}
-              options={{ title: 'Assign Membership' }}
-            />
-            <Stack.Screen 
-              name="CreateMembershipPlan" 
-              component={CreateMembershipPlanScreen}
-              options={{ title: 'Create Plan' }}
-            />
-            <Stack.Screen 
-              name="Memberships"
-              component={MembershipsScreen}
-              options={{ title: 'Memberships' }}
-            />
-<Stack.Screen 
-              name="Progress" 
-              component={ProgressScreen}
-              options={{ title: 'Progress' }}
-            />
-<Stack.Screen 
-              name="CreatePayment" 
-              component={CreatePaymentScreen}
-              options={{ title: 'Record Payment' }}
-            />
-            <Stack.Screen 
-              name="Profile" 
-              component={ProfileScreen}
-              options={{ title: 'Profile' }}
-            />
-            <Stack.Screen 
-              name="Trainers" 
-              component={TrainersScreen}
-              options={{ title: 'Trainers' }}
-            />
+            {renderStackScreen('MemberDetail', MemberDetailScreen, { title: 'Member Details' })}
+            {renderStackScreen('CreateMember', CreateMemberScreen, { title: 'Add New Member' })}
+            {renderStackScreen('AssignMembership', AssignMembershipScreen, { title: 'Assign Membership' })}
+            {renderStackScreen('CreateMembershipPlan', CreateMembershipPlanScreen, { title: 'Create Plan' })}
+            {renderStackScreen('Memberships', MembershipsScreen, { title: 'Memberships' })}
+            {renderStackScreen('Progress', ProgressScreen, { title: 'Progress' })}
+            {renderStackScreen('CreatePayment', CreatePaymentScreen, { title: 'Record Payment' })}
+            {renderStackScreen('Gyms', GymsScreen, { title: 'Gyms' })}
+            {renderStackScreen('CreateGym', CreateGymScreen, { title: 'Create Gym' })}
+            {renderStackScreen('Profile', ProfileScreen, { title: 'Profile' })}
+            {renderStackScreen('Trainers', TrainersScreen, { title: 'Trainers' })}
+            {renderStackScreen('TrainerDetail', TrainerDetailScreen, { title: 'Trainer Details' })}
+            {renderStackScreen('CreateTrainer', CreateTrainerScreen, { title: 'Create Trainer' })}
           </>
         )}
       </Stack.Navigator>

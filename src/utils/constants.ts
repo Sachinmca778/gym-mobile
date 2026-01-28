@@ -20,11 +20,13 @@ export const MEMBER_ENDPOINTS = {
 
 // Trainer Endpoints
 export const TRAINER_ENDPOINTS = {
-  GET_ALL: '/gym/trainers/all',
+  GET_ALL: '/gym/trainers/active',
   GET_BY_ID: (id: number) => `/gym/trainers/${id}`,
   CREATE: '/gym/trainers',
   UPDATE: (id: number) => `/gym/trainers/${id}`,
   DELETE: (id: number) => `/gym/trainers/${id}`,
+  GET_BY_SPECIALIZATION: (specialization: string) => `/gym/trainers/specialization/${specialization}`,
+  GET_TOP_RATED: '/gym/trainers/top-rated',
 };
 
 // Membership Endpoints
