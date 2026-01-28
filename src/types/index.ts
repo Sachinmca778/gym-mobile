@@ -50,8 +50,11 @@ export interface Trainer {
   hourlyRate: number;
   bio: string;
   location: string;
-  certifications: string[];
-  schedule: Record<string, string>;
+  certifications: string; // JSON string from backend
+  schedule: string; // JSON string from backend
+  rating?: number;
+  totalRatings?: number;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }

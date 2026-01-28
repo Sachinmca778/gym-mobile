@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import api from '../../api/api';
 import { Gym } from '../../types';
+import { GYM_ENDPOINTS } from '../../utils/constants';
 
 const GymsScreen = () => {
   const navigation = useNavigation<any>();
@@ -54,7 +55,7 @@ const GymsScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await api.delete(`/gym/gyms/${gym.id}`);
+              await api.delete(GYM_ENDPOINTS.DELETE(gym.id));
               setGyms(gyms.filter(g => g.id !== gym.id));
               Alert.alert('Success', 'Gym deleted successfully');
             } catch (error) {

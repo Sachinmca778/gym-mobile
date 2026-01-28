@@ -20,7 +20,8 @@ export const MEMBER_ENDPOINTS = {
 
 // Trainer Endpoints
 export const TRAINER_ENDPOINTS = {
-  GET_ALL: '/gym/trainers/active',
+  GET_ALL: '/gym/trainers',
+  GET_ACTIVE: '/gym/trainers/active',
   GET_BY_ID: (id: number) => `/gym/trainers/${id}`,
   CREATE: '/gym/trainers',
   UPDATE: (id: number) => `/gym/trainers/${id}`,
@@ -68,8 +69,9 @@ export const PROGRESS_ENDPOINTS = {
 // Gym Endpoints
 export const GYM_ENDPOINTS = {
   GET_ALL: '/gym/gyms/all',
+  GET_ACTIVE: '/gym/gyms/active',
   GET_BY_ID: (id: number) => `/gym/gyms/${id}`,
-  CREATE: '/gym/gyms',
+  CREATE: '/gym/gyms/create',
   UPDATE: (id: number) => `/gym/gyms/${id}`,
   DELETE: (id: number) => `/gym/gyms/${id}`,
 };

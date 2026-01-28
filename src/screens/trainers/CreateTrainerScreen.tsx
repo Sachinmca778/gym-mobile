@@ -34,7 +34,18 @@ const CreateTrainerScreen = () => {
   const [hourlyRate, setHourlyRate] = useState(trainer?.hourlyRate?.toString() || '');
   const [bio, setBio] = useState(trainer?.bio || '');
   const [location, setLocation] = useState(trainer?.location || '');
-  const [certifications, setCertifications] = useState(trainer?.certifications?.join(', ') || '');
+  const [certifications, setCertifications] = useState(() => {
+    if (trainer?.certifications) {
+      // If certifications is already a JSON string from backend, parse it
+      try {
+        const parsed = JSON.parse(trainer.certifications);
+        return Array.isArray(parsed) ? parsed.join(', ') : trainer.certifications;
+      } catch {
+        return trainer.certifications;
+      }
+    }
+    return '';
+  });
 
   // Schedule state
   const [schedule, setSchedule] = useState({
@@ -48,12 +59,6 @@ const CreateTrainerScreen = () => {
   });
 
   const isEditing = !!trainer;
-
-  useEffect(() => {
-    if (isEditing && trainer?.schedule) {
-      setSchedule(trainer.schedule);
-    }
-  }, [trainer]);
 
   const validateForm = () => {
     if (!firstName.trim()) {
@@ -94,10 +99,10 @@ const CreateTrainerScreen = () => {
         hourlyRate: parseFloat(hourlyRate) || 0,
         bio: bio.trim(),
         location: location.trim(),
-        certifications: certifications.split(',').map(cert => cert.trim()).filter(cert => cert),
-        schedule: Object.fromEntries(
+        certifications: JSON.stringify(certifications.split(',').map((cert: string) => cert.trim()).filter((cert: string) => cert)),
+        schedule: JSON.stringify(Object.fromEntries(
           Object.entries(schedule).filter(([_, time]) => time.trim() !== '')
-        ),
+        )),
       };
 
       if (isEditing) {

@@ -50,7 +50,7 @@ const CreateGymScreen = () => {
   const fetchGymData = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/gym/gyms/${gymId}`);
+      const response = await api.get(GYM_ENDPOINTS.GET_BY_ID(gymId));
       const gym = response.data;
       setFormData({
         gymCode: gym.gymCode || '',
@@ -105,13 +105,13 @@ const CreateGymScreen = () => {
       
       if (gymId) {
         // Update existing gym
-        await api.put(`/gym/gyms/${gymId}`, formData);
+        await api.put(GYM_ENDPOINTS.UPDATE(gymId), formData);
         Alert.alert('Success', 'Gym updated successfully!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       } else {
         // Create new gym
-        await api.post('/gym/gyms', formData);
+        await api.post(GYM_ENDPOINTS.CREATE, formData);
         Alert.alert('Success', 'Gym created successfully!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
