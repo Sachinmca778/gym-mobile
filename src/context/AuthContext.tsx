@@ -82,6 +82,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = await secureStore.getItemAsync('accessToken');
       const role = await secureStore.getItemAsync('userRole');
       const username = await secureStore.getItemAsync('username');
+      const gymIdStr = await secureStore.getItemAsync('gymId');
+      const gymId = gymIdStr ? parseInt(gymIdStr) : undefined;
 
       if (token && role) {
         setUser({
@@ -91,6 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           firstName: '',
           lastName: '',
           role: role,
+          gymId: gymId,
           accessToken: token,
           refreshToken: '',
         });
@@ -117,6 +120,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await secureStore.setItemAsync('username', username);
       await secureStore.setItemAsync('userId', String(userId));
 
+      // For ADMIN, gymId will be null/undefined. For other roles, it should be set by backend
+      // Note: You may need to update the backend to return gymId in the login response
+      const gymId = response.data.gymId || undefined;
+      if (gymId) {
+        await secureStore.setItemAsync('gymId', String(gymId));
+      }
+
       setUser({
         id: userId,
         username,
@@ -124,6 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         firstName: name?.split(' ')[0] || '',
         lastName: name?.split(' ')[1] || '',
         role,
+        gymId: gymId,
         accessToken,
         refreshToken,
       });
@@ -157,6 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await secureStore.deleteItemAsync('username');
       await secureStore.deleteItemAsync('userId');
       await secureStore.deleteItemAsync('memberId');
+      await secureStore.deleteItemAsync('gymId'); // Clear gymId on logout
       
       // Also clear from localStorage (used by api interceptor)
       if (typeof window !== 'undefined') {
@@ -165,6 +177,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('userRole');
         localStorage.removeItem('username');
         localStorage.removeItem('userId');
+        localStorage.removeItem('gymId');
       }
       
       setUser(null);

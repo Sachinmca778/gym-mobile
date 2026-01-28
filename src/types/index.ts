@@ -7,6 +7,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: string;
+  gymId?: number; // NULL for ADMIN, NOT NULL for other roles
   accessToken: string;
   refreshToken: string;
 }
@@ -147,17 +148,20 @@ export interface ProgressTracking {
   createdAt: string;
 }
 
+// Gym interface (merged from both definitions)
 export interface Gym {
   id: number;
+  gymCode?: string;
   name: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  phone: string;
-  email: string;
-  openingTime: string;
-  closingTime: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  phone?: string;
+  email?: string;
+  openingTime?: string;
+  closingTime?: string;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -186,6 +190,7 @@ export interface AuthResponse {
   role: string;
   name: string;
   memberId: number;
+  gymId?: number; // NULL for ADMIN, NOT NULL for other roles
 }
 
 export interface RegisterRequest {
@@ -227,6 +232,9 @@ export interface MemberFormData {
   medicalConditions: string;
   allergies: string;
   fitnessGoals: string;
+  
+  // System fields
+  gymId?: number;
 }
 
 // Member Membership Module Types
@@ -262,23 +270,6 @@ export interface MemberSearchItem {
   status: string;
 }
 
-export interface Gym {
-  id: number;
-  gymCode: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  isActive: boolean;
-  openingTime?: string;
-  closingTime?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface GymForm {
   gymCode: string;
   name: string;
@@ -302,5 +293,12 @@ export interface MembershipPlanForm {
   isActive: boolean;
 }
 
-
+// API Error Response
+export interface ApiErrorResponse {
+  timestamp: string;
+  status: number;
+  error: string;
+  message: string;
+  messages?: Record<string, string>;
+}
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -19,9 +19,11 @@ import { Icon, Divider, RadioButton } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../../api/api';
 import { MemberFormData, MembershipPlan } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 const CreateMemberScreen = () => {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
@@ -152,13 +154,38 @@ const CreateMemberScreen = () => {
 
     try {
       setSubmitting(true);
-      await api.post('/gym/members/create', formData);
+      
+      // Get gymId from user context (for non-ADMIN users)
+      const gymId = user?.gymId;
+      
+      // Create payload with gymId
+      const payload = {
+        ...formData,
+        gymId: gymId,
+      };
+      
+      await api.post('/gym/members/create', payload);
       Alert.alert('Success', 'Member created successfully!', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
       console.error('Error creating member:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to create member');
+      
+      // Handle validation errors from backend
+      if (error.response?.data?.message) {
+        const errorMessage = error.response.data.message;
+        
+        // Check for specific validation errors
+        if (errorMessage.includes('email') && errorMessage.includes('already exists')) {
+          Alert.alert('Validation Error', 'This email is already registered in this gym. Please use a different email.');
+        } else if (errorMessage.includes('user_id') && errorMessage.includes('already exists')) {
+          Alert.alert('Validation Error', 'This user is already linked to another member.');
+        } else {
+          Alert.alert('Error', errorMessage);
+        }
+      } else {
+        Alert.alert('Error', error.response?.data?.message || 'Failed to create member');
+      }
     } finally {
       setSubmitting(false);
     }
