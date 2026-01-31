@@ -9,6 +9,7 @@ export interface User {
   role: string;
   accessToken: string;
   refreshToken: string;
+  gymId?: number; // Added for gym scoping - null for ADMIN
 }
 
 export interface Member {
@@ -149,15 +150,17 @@ export interface ProgressTracking {
 
 export interface Gym {
   id: number;
+  gymCode?: string;
   name: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  phone: string;
-  email: string;
-  openingTime: string;
-  closingTime: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  phone?: string;
+  email?: string;
+  openingTime?: string;
+  closingTime?: string;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -186,6 +189,7 @@ export interface AuthResponse {
   role: string;
   name: string;
   memberId: number;
+  gymId?: number; // null for ADMIN, set for other roles
 }
 
 export interface RegisterRequest {
@@ -195,6 +199,7 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   role: string;
+  gymId?: number;
 }
 
 export interface MemberFormData {
@@ -260,23 +265,6 @@ export interface MemberSearchItem {
   phone: string;
   memberCode: string;
   status: string;
-}
-
-export interface Gym {
-  id: number;
-  gymCode: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  isActive: boolean;
-  openingTime?: string;
-  closingTime?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface GymForm {

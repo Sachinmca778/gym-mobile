@@ -10,34 +10,15 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
-import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../../context/AuthContext';
-import { API_BASE_URL } from '../../utils/constants';
 
 const ProfileScreen = () => {
   const navigation = useNavigation<any>();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
 
-  const clearAllStorage = async () => {
-    // Clear SecureStore
-    await SecureStore.deleteItemAsync('accessToken');
-    await SecureStore.deleteItemAsync('refreshToken');
-    await SecureStore.deleteItemAsync('userRole');
-    await SecureStore.deleteItemAsync('username');
-    await SecureStore.deleteItemAsync('userId');
-    
-    // Clear localStorage for web
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('username');
-      localStorage.removeItem('userId');
-    }
-  };
-
   const handleLogout = async () => {
+    console.log('Logout button pressed!'); // Debug log
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -50,23 +31,19 @@ const ProfileScreen = () => {
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
+            console.log('Logout confirmed!'); // Debug log
             try {
-              // Get token from SecureStore
-              const token = await SecureStore.getItemAsync('accessToken');
-              
-              if (token) {
-                // Call backend logout
-                await fetch(`${API_BASE_URL}/gym/auth/logout?token=${token}`, {
-                  method: 'POST',
-                });
-              }
+              // Use the centralized logout function from AuthContext
+              await logout();
+
+              // Reset navigation to login screen
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
             } catch (error) {
               console.error('Logout error:', error);
-            } finally {
-              // Clear all stored data
-              await clearAllStorage();
-              
-              // Reset navigation to login
+              // Even if logout fails, navigate to login
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Login' }],
@@ -167,7 +144,7 @@ const ProfileScreen = () => {
 
       {/* Logout Button */}
       <View style={styles.logoutContainer}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.7} >
           <Icon source="logout" size={20} color="#EF4444" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>

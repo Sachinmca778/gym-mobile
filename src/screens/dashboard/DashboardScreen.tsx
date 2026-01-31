@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
@@ -27,6 +28,33 @@ const DashboardScreen = () => {
 
   const permissions = getRolePermissions(user?.role || '');
 
+  /* ===================== STORAGE HELPERS ===================== */
+
+  const getToken = async () => {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem('accessToken');
+    }
+    return await SecureStore.getItemAsync('accessToken');
+  };
+
+  const clearAllStorage = async () => {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('username');
+      localStorage.removeItem('userId');
+    } else {
+      await SecureStore.deleteItemAsync('accessToken');
+      await SecureStore.deleteItemAsync('refreshToken');
+      await SecureStore.deleteItemAsync('userRole');
+      await SecureStore.deleteItemAsync('username');
+      await SecureStore.deleteItemAsync('userId');
+    }
+  };
+
+  /* ===================== API ===================== */
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -36,7 +64,7 @@ const DashboardScreen = () => {
       const response = await api.get('/gym/members/dashborad/summary');
       setSummary(response.data);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Dashboard error:', error);
     } finally {
       setLoading(false);
     }
@@ -48,64 +76,53 @@ const DashboardScreen = () => {
     setRefreshing(false);
   };
 
-  const clearAllStorage = async () => {
-    // Clear SecureStore
-    await SecureStore.deleteItemAsync('accessToken');
-    await SecureStore.deleteItemAsync('refreshToken');
-    await SecureStore.deleteItemAsync('userRole');
-    await SecureStore.deleteItemAsync('username');
-    await SecureStore.deleteItemAsync('userId');
-    
-    // Clear localStorage for web
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('username');
-      localStorage.removeItem('userId');
+  /* ===================== LOGOUT ===================== */
+
+  const performLogout = async () => {
+    try {
+      const token = await getToken();
+
+      if (token) {
+        await fetch(`${API_BASE_URL}/gym/auth/logout?token=${token}`, {
+          method: 'POST',
+        });
+      }
+    } catch (error) {
+      console.error('Logout API error:', error);
+    } finally {
+      await clearAllStorage();
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    // WEB
+    if (Platform.OS === 'web') {
+      const ok = window.confirm('Are you sure you want to logout?');
+      if (ok) performLogout();
+      return;
+    }
+
+    // MOBILE
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              // Get token from SecureStore
-              const token = await SecureStore.getItemAsync('accessToken');
-              
-              if (token) {
-                // Call backend logout
-                await fetch(`${API_BASE_URL}/gym/auth/logout?token=${token}`, {
-                  method: 'POST',
-                });
-              }
-            } catch (error) {
-              console.error('Logout error:', error);
-            } finally {
-              // Clear all stored data
-              await clearAllStorage();
-              
-              // Reset navigation to login
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
-            }
-          },
+          onPress: performLogout,
         },
-      ]
+      ],
+      { cancelable: true }
     );
   };
+
 
   if (loading) {
     return (
@@ -115,163 +132,74 @@ const DashboardScreen = () => {
     );
   }
 
-  const getStats = () => {
-    const baseStats = [];
-
-    // All roles can see member stats
-    baseStats.push({
+  const stats = [
+    {
       title: 'Total Members',
       value: summary?.totalMembers || 0,
       icon: 'account-group',
       color: '#3B82F6',
-      change: '+12%',
-    });
-
-    baseStats.push({
+    },
+    {
       title: 'Active Members',
       value: summary?.activeMembers || 0,
       icon: 'check-circle',
       color: '#10B981',
-      change: '+8%',
-    });
-
-    // Only show financial stats for roles that can view financial reports
-    if (permissions.canViewFinancialReports) {
-      baseStats.push({
-        title: 'Monthly Revenue',
-        value: `₹${summary?.totalPaymentsCurrentMonth || 0}`,
-        icon: 'currency-inr',
-        color: '#F59E0B',
-        change: '+15%',
-      });
-    }
-
-    // Show expiring members for roles that can manage members
-    if (permissions.canViewAllMembers || permissions.canViewAssignedMembers) {
-      baseStats.push({
-        title: 'Expiring Soon',
-        value: summary?.expiringMembersCount || 0,
-        icon: 'alert',
-        color: '#EF4444',
-        change: '-5%',
-      });
-    }
-
-    return baseStats;
-  };
-
-  const getQuickActions = () => {
-    const actions = [];
-
-    if (permissions.canCreateMember) {
-      actions.push({ title: 'Add Member', icon: 'account-plus', color: '#3B82F6', screen: 'CreateMember' });
-    }
-
-    if (permissions.canViewMembers) {
-      actions.push({ title: 'Members', icon: 'account-group', color: '#3B82F6', screen: 'Members' });
-    }
-
-    if (permissions.canViewAttendance) {
-      actions.push({ title: 'Attendance', icon: 'check-circle', color: '#10B981', screen: 'Attendance' });
-    }
-
-    if (permissions.canViewMemberships) {
-      actions.push({ title: 'Memberships', icon: 'card-membership', color: '#8B5CF6', screen: 'Memberships' });
-    }
-
-    if (permissions.canViewPayments) {
-      actions.push({ title: 'Payments', icon: 'credit-card', color: '#F59E0B', screen: 'Payments' });
-    }
-
-    if (permissions.canViewProgress) {
-      actions.push({ title: 'Progress', icon: 'chart-line', color: '#EC4899', screen: 'Progress' });
-    }
-
-    if (permissions.canViewTrainers) {
-      actions.push({ title: 'Trainers', icon: 'account-tie', color: '#6366F1', screen: 'Trainers' });
-    }
-
-    if (permissions.canViewGyms) {
-      actions.push({ title: 'Gyms', icon: 'dumbbell', color: '#EC4899', screen: 'Gyms' });
-    }
-
-    return actions;
-  };
-
-  const stats = getStats();
-  const quickActions = getQuickActions();
+    },
+    ...(permissions.canViewFinancialReports
+      ? [
+          {
+            title: 'Monthly Revenue',
+            value: `₹${summary?.totalPaymentsCurrentMonth || 0}`,
+            icon: 'currency-inr',
+            color: '#F59E0B',
+          },
+        ]
+      : []),
+  ];
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {/* Header with Logout */}
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <View>
           <Text style={styles.greeting}>Welcome Back!</Text>
           <Text style={styles.title}>Dashboard</Text>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Icon source="logout" size={20} color="#EF4444" />
+
+        <TouchableOpacity
+          style={styles.logoutButton}
+          activeOpacity={0.7}
+          onPress={handleLogout}
+        >
+          <View pointerEvents="none">
+            <Icon source="logout" size={20} color="#EF4444" />
+          </View>
         </TouchableOpacity>
       </View>
 
-      {/* Stats Grid */}
+      {/* Stats */}
       <View style={styles.statsGrid}>
-        {stats.map((stat, index) => (
-          <View key={index} style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
-              <Icon source={stat.icon} size={24} color={stat.color} />
+        {stats.map((item, i) => (
+          <View key={i} style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: `${item.color}20` }]}>
+              <Icon source={item.icon} size={24} color={item.color} />
             </View>
-            <Text style={styles.statValue}>{stat.value}</Text>
-            <Text style={styles.statTitle}>{stat.title}</Text>
-            <Text style={[styles.statChange, { color: stat.change.startsWith('+') ? '#10B981' : '#EF4444' }]}>
-              {stat.change}
-            </Text>
+            <Text style={styles.statValue}>{item.value}</Text>
+            <Text style={styles.statTitle}>{item.title}</Text>
           </View>
         ))}
       </View>
-
-      {/* Quick Actions */}
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <View style={styles.quickActions}>
-        {quickActions.map((action, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.actionCard}
-            onPress={() => navigation.navigate(action.screen as any)}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: `${action.color}20` }]}>
-              <Icon source={action.icon} size={28} color={action.color} />
-            </View>
-            <Text style={styles.actionText}>{action.title}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Alerts */}
-      {summary && summary.expiringMembersCount > 0 && (
-        <View style={styles.alertCard}>
-          <View style={styles.alertHeader}>
-            <Icon source="alert-circle" size={24} color="#F59E0B" />
-            <Text style={styles.alertTitle}>Attention Required</Text>
-          </View>
-          <Text style={styles.alertText}>
-            {summary.expiringMembersCount} memberships are expiring this week.
-            Consider sending renewal reminders.
-          </Text>
-          <TouchableOpacity style={styles.alertButton}>
-            <Text style={styles.alertButtonText}>View Details</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </ScrollView>
   );
 };
+
+export default DashboardScreen;
+
+/* ===================== STYLES ===================== */
 
 const styles = StyleSheet.create({
   container: {
@@ -293,9 +221,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  headerLeft: {
-    flex: 1,
-  },
   greeting: {
     fontSize: 16,
     color: '#64748B',
@@ -312,11 +237,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 2,
+    zIndex: 10,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -329,11 +251,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   statIcon: {
     width: 48,
@@ -351,88 +268,5 @@ const styles = StyleSheet.create({
   statTitle: {
     fontSize: 14,
     color: '#64748B',
-    marginTop: 4,
-  },
-  statChange: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  actionCard: {
-    width: '23%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0F172A',
-    textAlign: 'center',
-  },
-  alertCard: {
-    backgroundColor: '#FFFBEB',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  alertHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  alertTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginLeft: 8,
-  },
-  alertText: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 12,
-  },
-  alertButton: {
-    backgroundColor: '#F59E0B',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignSelf: 'flex-start',
-  },
-  alertButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
   },
 });
-
-export default DashboardScreen;
-

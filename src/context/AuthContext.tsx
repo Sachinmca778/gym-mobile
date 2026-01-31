@@ -82,6 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = await secureStore.getItemAsync('accessToken');
       const role = await secureStore.getItemAsync('userRole');
       const username = await secureStore.getItemAsync('username');
+      const gymIdStr = await secureStore.getItemAsync('gymId');
 
       if (token && role) {
         setUser({
@@ -93,6 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           role: role,
           accessToken: token,
           refreshToken: '',
+          gymId: gymIdStr ? parseInt(gymIdStr) : undefined,
         });
       }
     } catch (err) {
@@ -117,6 +119,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await secureStore.setItemAsync('username', username);
       await secureStore.setItemAsync('userId', String(userId));
 
+      // Store gymId if available in response (would need to be added to AuthResponseDto)
+      const gymId = (response.data as any).gymId;
+      if (gymId !== undefined) {
+        await secureStore.setItemAsync('gymId', String(gymId));
+      }
+
       setUser({
         id: userId,
         username,
@@ -126,6 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role,
         accessToken,
         refreshToken,
+        gymId: gymId,
       });
     } catch (err: any) {
       console.log(err,'err');
@@ -157,6 +166,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await secureStore.deleteItemAsync('username');
       await secureStore.deleteItemAsync('userId');
       await secureStore.deleteItemAsync('memberId');
+      await secureStore.deleteItemAsync('gymId');
       
       // Also clear from localStorage (used by api interceptor)
       if (typeof window !== 'undefined') {
@@ -165,6 +175,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('userRole');
         localStorage.removeItem('username');
         localStorage.removeItem('userId');
+        localStorage.removeItem('gymId');
       }
       
       setUser(null);
