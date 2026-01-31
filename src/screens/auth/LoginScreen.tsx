@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,9 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../api/api';
-import { Gym } from '../../types';
 
 const LoginScreen = () => {
   const navigation = useNavigation<any>();
@@ -23,19 +19,6 @@ const LoginScreen = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSignup, setIsSignup] = useState(false);
-  const [signupLoading, setSignupLoading] = useState(false);
-  const [signupForm, setSignupForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    firstName: '',
-    lastName: '',
-    gymId: '',
-  });
-  const [gyms, setGyms] = useState<Gym[]>([]);
-  const [gymsLoading, setGymsLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -51,80 +34,6 @@ const LoginScreen = () => {
     }
   };
 
-  const handleSignup = async () => {
-    if (!signupForm.username || !signupForm.email || !signupForm.password || !signupForm.firstName || !signupForm.lastName || !signupForm.gymId) {
-      Alert.alert('Error', 'Please fill all required fields');
-      return;
-    }
-
-    if (signupForm.password !== signupForm.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    if (signupForm.password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
-    setSignupLoading(true);
-
-    try {
-      const response = await api.post('/gym/auth/register', {
-        username: signupForm.username,
-        email: signupForm.email,
-        passwordHash: signupForm.password,
-        firstName: signupForm.firstName,
-        lastName: signupForm.lastName,
-        role: 'MEMBER',
-        gym: { id: parseInt(signupForm.gymId) },
-      });
-
-      Alert.alert('Success', 'Registration successful! Please login.', [
-        { text: 'OK', onPress: () => {
-          setIsSignup(false);
-          setSignupForm({
-            username: '',
-            email: '',
-            password: '',
-            confirmPassword: '',
-            firstName: '',
-            lastName: '',
-            gymId: '',
-          });
-        }},
-      ]);
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Registration failed. Please try again.';
-      Alert.alert('Error', message);
-    } finally {
-      setSignupLoading(false);
-    }
-  };
-
-  const handleSignupChange = (field: string, value: string) => {
-    setSignupForm({ ...signupForm, [field]: value });
-  };
-
-  const fetchGyms = async () => {
-    setGymsLoading(true);
-    try {
-      const response = await api.get('/gym/gyms/active');
-      setGyms(response.data);
-    } catch (error) {
-      console.error('Failed to fetch gyms:', error);
-      Alert.alert('Error', 'Failed to load gyms. Please try again.');
-    } finally {
-      setGymsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isSignup) {
-      fetchGyms();
-    }
-  }, [isSignup]);
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -133,27 +42,7 @@ const LoginScreen = () => {
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Gym CRM</Text>
-          <Text style={styles.subtitle}>
-            {isSignup ? 'Create your account' : 'Sign in to your account'}
-          </Text>
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[styles.toggleButton, !isSignup && styles.activeToggle]}
-              onPress={() => setIsSignup(false)}
-            >
-              <Text style={[styles.toggleText, !isSignup && styles.activeToggleText]}>
-                Sign In
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleButton, isSignup && styles.activeToggle]}
-              onPress={() => setIsSignup(true)}
-            >
-              <Text style={[styles.toggleText, isSignup && styles.activeToggleText]}>
-                Sign Up
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.subtitle}>Sign in to your account</Text>
         </View>
 
         {error && (
@@ -162,153 +51,54 @@ const LoginScreen = () => {
           </View>
         )}
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.form}>
-            {isSignup ? (
-              <>
-                <View style={styles.row}>
-                  <View style={styles.halfWidth}>
-                    <Text style={styles.label}>First Name</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter first name"
-                      value={signupForm.firstName}
-                      onChangeText={(value) => handleSignupChange('firstName', value)}
-                    />
-                  </View>
-                  <View style={styles.halfWidth}>
-                    <Text style={styles.label}>Last Name</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter last name"
-                      value={signupForm.lastName}
-                      onChangeText={(value) => handleSignupChange('lastName', value)}
-                    />
-                  </View>
-                </View>
+        <View style={styles.form}>
+          <Text style={styles.label}>Username</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your username"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
 
-                <Text style={styles.label}>Username</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter username"
-                  value={signupForm.username}
-                  onChangeText={(value) => handleSignupChange('username', value)}
-                  autoCapitalize="none"
-                />
-
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter email"
-                  value={signupForm.email}
-                  onChangeText={(value) => handleSignupChange('email', value)}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={styles.passwordInput}
-                    placeholder="Enter password"
-                    value={signupForm.password}
-                    onChangeText={(value) => handleSignupChange('password', value)}
-                    secureTextEntry={!showPassword}
-                  />
-                  <TouchableOpacity
-                    style={styles.showPasswordButton}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Text style={styles.showPasswordText}>
-                      {showPassword ? 'Hide' : 'Show'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.label}>Confirm Password</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm password"
-                  value={signupForm.confirmPassword}
-                  onChangeText={(value) => handleSignupChange('confirmPassword', value)}
-                  secureTextEntry={!showPassword}
-                />
-
-                <Text style={styles.label}>Select Gym</Text>
-                <View style={styles.pickerContainer}>
-                  {gymsLoading ? (
-                    <ActivityIndicator size="small" color="#3B82F6" />
-                  ) : (
-                    <Picker
-                      selectedValue={signupForm.gymId}
-                      onValueChange={(value) => handleSignupChange('gymId', value)}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Select a gym" value="" />
-                      {gyms.map((gym) => (
-                        <Picker.Item key={gym.id} label={gym.name} value={gym.id.toString()} />
-                      ))}
-                    </Picker>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={styles.signupButton}
-                  onPress={handleSignup}
-                  disabled={signupLoading}
-                >
-                  {signupLoading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.signupButtonText}>Sign Up</Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Text style={styles.label}>Username</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your username"
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="none"
-                />
-
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={styles.passwordInput}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                  />
-                  <TouchableOpacity
-                    style={styles.showPasswordButton}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Text style={styles.showPasswordText}>
-                      {showPassword ? 'Hide' : 'Show'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.loginButton}
-                  onPress={handleLogin}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.loginButtonText}>Sign In</Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            )}
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity
+              style={styles.showPasswordButton}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Text style={styles.showPasswordText}>
+                {showPassword ? 'Hide' : 'Show'}
+              </Text>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
+
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.loginButtonText}>Sign In</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.signupButton}
+            onPress={() => navigation.navigate('Signup')}
+          >
+            <Text style={styles.signupButtonText}>Create Account</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );

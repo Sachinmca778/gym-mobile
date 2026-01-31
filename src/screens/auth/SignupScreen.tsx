@@ -20,6 +20,7 @@ const SignupScreen = () => {
   const navigation = useNavigation<any>();
   const [isLoading, setIsLoading] = useState(false);
   const [gyms, setGyms] = useState<Gym[]>([]);
+  const [selectedRole, setSelectedRole] = useState('MEMBER');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -27,6 +28,7 @@ const SignupScreen = () => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
+    phone: '',
     gymId: '',
   });
 
@@ -48,7 +50,7 @@ const SignupScreen = () => {
   };
 
   const handleSignup = async () => {
-    if (!formData.username || !formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+    if (!formData.username || !formData.email || !formData.password || !formData.firstName || !formData.lastName || !formData.phone || !selectedRole) {
       Alert.alert('Error', 'Please fill all required fields');
       return;
     }
@@ -72,7 +74,8 @@ const SignupScreen = () => {
         passwordHash: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        role: 'MEMBER',
+        phone: formData.phone,
+        role: selectedRole,
       };
 
       if (formData.gymId) {
@@ -97,7 +100,7 @@ const SignupScreen = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
@@ -144,6 +147,28 @@ const SignupScreen = () => {
               keyboardType="email-address"
               autoCapitalize="none"
             />
+
+            <Text style={styles.label}>Phone *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your phone number"
+              value={formData.phone}
+              onChangeText={(value) => handleChange('phone', value)}
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.label}>Role *</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedRole}
+                onValueChange={(value) => setSelectedRole(value)}
+                style={styles.picker}
+              >
+                <Picker.Item label="MEMBER" value="MEMBER" />
+                <Picker.Item label="TRAINER" value="TRAINER" />
+                <Picker.Item label="ADMIN" value="ADMIN" />
+              </Picker>
+            </View>
 
             <Text style={styles.label}>Password *</Text>
             <TextInput

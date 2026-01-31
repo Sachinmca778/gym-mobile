@@ -198,6 +198,7 @@ export interface RegisterRequest {
   passwordHash: string;
   firstName: string;
   lastName: string;
+  phone: string;
   role: string;
   gymId?: number;
 }
