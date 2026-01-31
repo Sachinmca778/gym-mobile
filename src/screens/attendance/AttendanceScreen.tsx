@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,18 +12,102 @@ import { Icon } from 'react-native-paper';
 import api from '../../api/api';
 
 
-const GYM_ID = 1;
-
 const AttendanceScreen = () => {
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
   const GYM_ID = typeof window !== 'undefined' ? localStorage.getItem('gymId') : null;
   const [loadingType, setLoadingType] =
     useState<'CHECK_IN' | 'CHECK_OUT' | null>(null);
 
-  const [lastAction, setLastAction] = useState<{
-    type: 'CHECK_IN' | 'CHECK_OUT';
-    time: string;
-  } | null>(null);
+  // Attendance state
+  // isCompleted means both check-in and check-out are done
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [currentAttendance, setCurrentAttendance] = useState<any>(null);
+  const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ================= FETCH ATTENDANCE STATUS =================
+  const fetchAttendanceStatus = async () => {
+    if (!userId || !GYM_ID) return;
+
+    try {
+      // Check if user has an open attendance (checked in but not out)
+      const currentResponse = await api.get(
+        `/api/gyms/${GYM_ID}/attendance/current/${userId}`
+      );
+      setCurrentAttendance(currentResponse.data);
+      setTodayAttendance(null);
+      setIsCompleted(false);
+    } catch (error: any) {
+      // No open attendance - check if already completed today
+      setCurrentAttendance(null);
+      
+      try {
+        const todayResponse = await api.get(
+          `/api/gyms/${GYM_ID}/attendance/today/${userId}`
+        );
+        setTodayAttendance(todayResponse.data);
+        setIsCompleted(true);
+      } catch (todayError: any) {
+        // No attendance today
+        setTodayAttendance(null);
+        setIsCompleted(false);
+      }
+    }
+  };
+
+  // ================= TIMER FUNCTIONS =================
+  const formatElapsedTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatDuration = (minutes: number): string => {
+    if (!minutes) return 'N/A';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    return `${mins} minutes`;
+  };
+
+  const startTimer = (checkInTime: string) => {
+    const checkInDate = new Date(checkInTime);
+    const updateTimer = () => {
+      const now = new Date();
+      const elapsedSeconds = Math.floor((now.getTime() - checkInDate.getTime()) / 1000);
+      setElapsedTime(formatElapsedTime(elapsedSeconds));
+    };
+
+    updateTimer(); // Initial update
+    timerRef.current = setInterval(updateTimer, 1000);
+  };
+
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  // ================= USE EFFECTS =================
+  useEffect(() => {
+    fetchAttendanceStatus();
+  }, [userId, GYM_ID]);
+
+  useEffect(() => {
+    if (currentAttendance?.checkIn && !isCompleted) {
+      startTimer(currentAttendance.checkIn);
+    } else {
+      stopTimer();
+      setElapsedTime('00:00:00');
+    }
+
+    return () => stopTimer();
+  }, [currentAttendance, isCompleted]);
 
   // ================= CHECK IN =================
   const handleCheckIn = async () => {
@@ -35,15 +119,14 @@ const AttendanceScreen = () => {
     try {
       setLoadingType('CHECK_IN');
 
-      await api.post(
+      const response = await api.post(
         `/api/gyms/${GYM_ID}/attendance/check-in/${userId}`,
         { method: 'MANUAL' }
       );
 
-      setLastAction({
-        type: 'CHECK_IN',
-        time: new Date().toLocaleTimeString(),
-      });
+      setCurrentAttendance(response.data);
+      setTodayAttendance(null);
+      setIsCompleted(false);
 
       Alert.alert('Success', 'Checked in successfully');
     } catch (error: any) {
@@ -57,35 +140,113 @@ const AttendanceScreen = () => {
   };
 
   // ================= CHECK OUT =================
-  const handleCheckOut = async () => {
-    if (!userId) {
+const handleCheckOut = async () => {
+  if (!userId) {
+    if (Platform.OS === 'web') {
+      window.alert('User not authenticated');
+    } else {
       Alert.alert('Validation Error', 'User not authenticated');
-      return;
     }
+    return;
+  }
 
+  const proceedCheckOut = async () => {
     try {
       setLoadingType('CHECK_OUT');
 
-      await api.post(
+      const response = await api.post(
         `/api/gyms/${GYM_ID}/attendance/check-out/${userId}`
       );
 
-      setLastAction({
-        type: 'CHECK_OUT',
-        time: new Date().toLocaleTimeString(),
-      });
+      setTodayAttendance(response.data);
+      setCurrentAttendance(null);
+      setIsCompleted(true);
+      stopTimer();
 
-      Alert.alert('Success', 'Checked out successfully');
+      if (Platform.OS === 'web') {
+        window.alert('Checked out successfully');
+      } else {
+        Alert.alert('Success', 'Checked out successfully');
+      }
     } catch (error: any) {
-      Alert.alert(
-        'Error',
-        error?.response?.data?.message || 'Check-out failed'
-      );
+      const message =
+        error?.response?.data?.message || 'Check-out failed';
+
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert('Error', message);
+      }
     } finally {
       setLoadingType(null);
     }
   };
 
+  // 🔹 Confirmation (Web vs Mobile)
+  if (Platform.OS === 'web') {
+    const confirmed = window.confirm(
+      'Are you sure you want to check out? Your session duration will be recorded.'
+    );
+    if (confirmed) {
+      await proceedCheckOut();
+    }
+  } else {
+    Alert.alert(
+      'Confirm Check-out',
+      'Are you sure you want to check out? Your session duration will be recorded.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Check Out',
+          style: 'destructive',
+          onPress: proceedCheckOut,
+        },
+      ]
+    );
+  }
+};
+
+
+  // ================= RENDER ATTENDANCE SUMMARY =================
+  const renderAttendanceSummary = () => {
+    if (!todayAttendance) return null;
+
+    const checkInTime = new Date(todayAttendance.checkIn).toLocaleTimeString();
+    const checkOutTime = new Date(todayAttendance.checkOut).toLocaleTimeString();
+    const duration = formatDuration(todayAttendance.durationMinutes);
+
+    return (
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryHeader}>
+          <Icon source="check-circle" size={24} color="#10B981" />
+          <Text style={styles.summaryTitle}>Today's Session Complete</Text>
+        </View>
+        
+        <View style={styles.summaryRow}>
+          <Icon source="login" size={18} color="#10B981" />
+          <Text style={styles.summaryText}>
+            Check-in: <Text style={styles.summaryValue}>{checkInTime}</Text>
+          </Text>
+        </View>
+        
+        <View style={styles.summaryRow}>
+          <Icon source="logout" size={18} color="#F59E0B" />
+          <Text style={styles.summaryText}>
+            Check-out: <Text style={styles.summaryValue}>{checkOutTime}</Text>
+          </Text>
+        </View>
+        
+        <View style={styles.summaryRow}>
+          <Icon source="clock-outline" size={18} color="#6366F1" />
+          <Text style={styles.summaryText}>
+            Total Duration: <Text style={styles.summaryValue}>{duration}</Text>
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  // ================= RENDER =================
   return (
     <View style={styles.container}>
       {/* HEADER */}
@@ -96,84 +257,86 @@ const AttendanceScreen = () => {
         </Text>
       </View>
 
-      {/* INPUT CARD */}
-      <View style={styles.card}>
-        {/* BUTTON ROW */}
-        <View style={styles.buttonRow}>
-          <Pressable
-            style={[
-              styles.button,
-              styles.checkInBtn,
-              loadingType && styles.disabledBtn,
-            ]}
-            onPress={handleCheckIn}
-            disabled={loadingType !== null}
-          >
-            {loadingType === 'CHECK_IN' ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Icon source="login" size={20} color="#FFF" />
-                <Text style={styles.buttonText}>Check In</Text>
-              </>
-            )}
-          </Pressable>
+      {/* ATTENDANCE SUMMARY (After check-in and check-out) */}
+      {isCompleted && renderAttendanceSummary()}
 
-          <Pressable
-            style={[
-              styles.button,
-              styles.checkOutBtn,
-              loadingType && styles.disabledBtn,
-            ]}
-            onPress={handleCheckOut}
-            disabled={loadingType !== null}
-          >
-            {loadingType === 'CHECK_OUT' ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Icon source="logout" size={20} color="#FFF" />
-                <Text style={styles.buttonText}>Check Out</Text>
-              </>
-            )}
-          </Pressable>
-        </View>
-      </View>
-
-      {/* LAST ACTION */}
-      {lastAction && (
-        <View style={styles.lastActionCard}>
-          <Text style={styles.lastActionTitle}>Last Action</Text>
-          <View style={styles.lastActionRow}>
-            <Icon
-              source={
-                lastAction.type === 'CHECK_IN'
-                  ? 'login'
-                  : 'logout'
-              }
-              size={20}
-              color={
-                lastAction.type === 'CHECK_IN'
-                  ? '#10B981'
-                  : '#F59E0B'
-              }
-            />
-            <Text style={styles.lastActionText}>
-              {lastAction.type === 'CHECK_IN'
-                ? 'Checked In'
-                : 'Checked Out'}{' '}
-              at {lastAction.time}
-            </Text>
-          </View>
+      {/* CURRENT SESSION TIMER (While checked in but not completed) */}
+      {currentAttendance && !isCompleted && (
+        <View style={styles.timerCard}>
+          <Text style={styles.timerTitle}>Current Session</Text>
+          <Text style={styles.timerDisplay}>{elapsedTime}</Text>
+          <Text style={styles.timerSubtitle}>
+            Checked in at {new Date(currentAttendance.checkIn).toLocaleTimeString()}
+          </Text>
         </View>
       )}
+
+      {/* ACTION BUTTONS CARD */}
+      <View style={styles.card}>
+        {!isCompleted ? (
+          <>
+            {/* CHECK IN BUTTON */}
+            <Pressable
+              style={[
+                styles.button,
+                styles.checkInBtn,
+                (loadingType !== null || currentAttendance) && styles.disabledBtn,
+              ]}
+              onPress={handleCheckIn}
+              disabled={loadingType !== null || currentAttendance}
+            >
+              {loadingType === 'CHECK_IN' ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Icon source="login" size={20} color="#FFF" />
+                  <Text style={styles.buttonText}>
+                    {currentAttendance ? 'Already Checked In' : 'Check In'}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+
+            {/* CHECK OUT BUTTON */}
+            <Pressable
+              style={[
+                styles.button,
+                styles.checkOutBtn,
+                (loadingType !== null || !currentAttendance) && styles.disabledBtn,
+              ]}
+              onPress={handleCheckOut}
+              disabled={loadingType !== null || !currentAttendance}
+            >
+              {loadingType === 'CHECK_OUT' ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Icon source="logout" size={20} color="#FFF" />
+                  <Text style={styles.buttonText}>Check Out</Text>
+                </>
+              )}
+            </Pressable>
+          </>
+        ) : (
+          /* ALREADY COMPLETED TODAY MESSAGE */
+          <View style={styles.completedMessage}>
+            <Icon source="check-all" size={32} color="#10B981" />
+            <Text style={styles.completedText}>
+              You've completed your attendance for today!
+            </Text>
+            <Text style={styles.completedSubtext}>
+              Come back tomorrow to check in again.
+            </Text>
+          </View>
+        )}
+      </View>
 
       {/* INFO */}
       <View style={styles.infoCard}>
         <Icon source="information" size={20} color="#1D4ED8" />
         <Text style={styles.infoText}>
-          You can check-in or check-out yourself if you belong to this gym.
-          Duplicate check-ins are automatically prevented.
+          You can check-in once per day. After check-in, you can check out when you're done.
+          Your session duration will be recorded.
         </Text>
       </View>
     </View>
@@ -235,7 +398,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F59E0B',
   },
   disabledBtn: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   buttonText: {
     color: '#FFF',
@@ -244,29 +407,90 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 
-  lastActionCard: {
+  timerCard: {
     backgroundColor: '#FFF',
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 16,
+    elevation: 3,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#10B981',
   },
-  lastActionTitle: {
-    fontSize: 13,
+  timerTitle: {
+    fontSize: 16,
     color: '#64748B',
     marginBottom: 8,
     fontWeight: '600',
   },
-  lastActionRow: {
+  timerDisplay: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#10B981',
+    marginBottom: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  timerSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+
+  summaryCard: {
+    backgroundColor: '#FFF',
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 16,
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#10B981',
+  },
+  summaryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  lastActionText: {
-    fontSize: 15,
-    color: '#0F172A',
-    fontWeight: '500',
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#10B981',
     marginLeft: 8,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  summaryText: {
+    fontSize: 14,
+    color: '#64748B',
+    marginLeft: 8,
+    flex: 1,
+  },
+  summaryValue: {
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+
+  completedMessage: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  completedText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#10B981',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  completedSubtext: {
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: 4,
+    textAlign: 'center',
   },
 
   infoCard: {
@@ -284,3 +508,4 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
+
