@@ -22,6 +22,7 @@ import MembershipsScreen from '../screens/memberships/MembershipsScreen';
 import ProgressScreen from '../screens/progress/ProgressScreen';
 import PaymentsScreen from '../screens/payments/PaymentsScreen';
 import CreatePaymentScreen from '../screens/payments/CreatePaymentScreen';
+import MyPaymentHistoryScreen from '../screens/payments/MyPaymentHistoryScreen';
 import GymsScreen from '../screens/gyms/GymsScreen';
 import CreateGymScreen from '../screens/gyms/CreateGymScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
@@ -161,6 +162,7 @@ const AppNavigator = () => {
             {renderStackScreen('Trainers', TrainersScreen, { title: 'Trainers' })}
             {renderStackScreen('TrainerDetail', TrainerDetailScreen, { title: 'Trainer Details' })}
             {renderStackScreen('CreateTrainer', CreateTrainerScreen, { title: 'Create Trainer' })}
+            {renderStackScreen('MyPaymentHistory', MyPaymentHistoryScreen, { title: 'My Payment History' })}
           </>
         )}
       </Stack.Navigator>

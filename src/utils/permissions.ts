@@ -159,7 +159,7 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
   },
   MEMBER: {
     // Navigation tabs
-    canViewDashboard: true,
+    canViewDashboard: false,
     canViewMembers: false,
     canViewAttendance: true,
     canViewPayments: false,
@@ -214,6 +214,8 @@ export const canAccessScreen = (userRole: string, screenName: string): boolean =
       return permissions.canViewPayments;
     case 'Profile':
       return permissions.canViewProfile;
+    case 'MyPaymentHistory':
+      return true;
     case 'CreateMember':
       return permissions.canCreateMember;
     case 'MemberDetail':

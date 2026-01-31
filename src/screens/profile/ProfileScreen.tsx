@@ -63,6 +63,12 @@ const ProfileScreen = () => {
       onPress: () => Alert.alert('Info', 'Profile editing coming soon'),
     },
     {
+      icon: 'credit-card',
+      title: 'My Payment History',
+      subtitle: 'View your payment transactions',
+      onPress: () => navigation.navigate('MyPaymentHistory'),
+    },
+    {
       icon: 'bell',
       title: 'Notifications',
       subtitle: 'Manage notification settings',

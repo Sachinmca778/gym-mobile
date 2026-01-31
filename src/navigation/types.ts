@@ -20,6 +20,7 @@ export type RootStackParamList = {
   Trainers: undefined;
   TrainerDetail: { trainerId: number };
   CreateTrainer: { trainer?: any };
+  MyPaymentHistory: undefined;
   Settings: undefined;
 };
 

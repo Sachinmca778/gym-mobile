@@ -30,29 +30,31 @@ const AttendanceScreen = () => {
   const fetchAttendanceStatus = async () => {
     if (!userId || !GYM_ID) return;
 
+    // Step 1: Check for today's completed attendance
     try {
-      // Check if user has an open attendance (checked in but not out)
+      const todayResponse = await api.get(
+        `/api/gyms/${GYM_ID}/attendance/today/${userId}`
+      );
+      setTodayAttendance(todayResponse.data);
+      setCurrentAttendance(null);
+      setIsCompleted(true);
+      return;
+    } catch {
+      // No completed attendance today - continue to check for open attendance
+      setTodayAttendance(null);
+    }
+
+    // Step 2: Check for current open attendance (checked in but not out)
+    try {
       const currentResponse = await api.get(
         `/api/gyms/${GYM_ID}/attendance/current/${userId}`
       );
       setCurrentAttendance(currentResponse.data);
-      setTodayAttendance(null);
       setIsCompleted(false);
-    } catch (error: any) {
-      // No open attendance - check if already completed today
+    } catch {
+      // No open attendance
       setCurrentAttendance(null);
-      
-      try {
-        const todayResponse = await api.get(
-          `/api/gyms/${GYM_ID}/attendance/today/${userId}`
-        );
-        setTodayAttendance(todayResponse.data);
-        setIsCompleted(true);
-      } catch (todayError: any) {
-        // No attendance today
-        setTodayAttendance(null);
-        setIsCompleted(false);
-      }
+      setIsCompleted(false);
     }
   };
 
