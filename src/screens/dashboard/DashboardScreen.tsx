@@ -30,27 +30,16 @@ const DashboardScreen = () => {
 
   /* ===================== STORAGE HELPERS ===================== */
 
-  const getToken = async () => {
-    if (Platform.OS === 'web') {
-      return localStorage.getItem('accessToken');
-    }
-    return await SecureStore.getItemAsync('accessToken');
+  const getToken = () => {
+    return localStorage.getItem('accessToken');
   };
 
-  const clearAllStorage = async () => {
-    if (Platform.OS === 'web') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('username');
-      localStorage.removeItem('userId');
-    } else {
-      await SecureStore.deleteItemAsync('accessToken');
-      await SecureStore.deleteItemAsync('refreshToken');
-      await SecureStore.deleteItemAsync('userRole');
-      await SecureStore.deleteItemAsync('username');
-      await SecureStore.deleteItemAsync('userId');
-    }
+  const clearAllStorage = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userId');
   };
 
   /* ===================== API ===================== */
@@ -61,7 +50,7 @@ const DashboardScreen = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await api.get('/gym/members/dashborad/summary');
+      const response = await api.get('/gym/members/dashboard/summary');
       setSummary(response.data);
     } catch (error) {
       console.error('Dashboard error:', error);
@@ -157,6 +146,50 @@ const DashboardScreen = () => {
       : []),
   ];
 
+  // Quick actions for admin users
+  const quickActions = [
+    ...(permissions.canManageGyms
+      ? [
+          {
+            title: 'Add New Gym',
+            icon: 'home-plus',
+            color: '#8B5CF6',
+            onPress: () => navigation.navigate('Gyms'),
+          },
+        ]
+      : []),
+    ...(permissions.canCreateMember
+      ? [
+          {
+            title: 'Add Member',
+            icon: 'account-plus',
+            color: '#3B82F6',
+            onPress: () => navigation.navigate('CreateMember'),
+          },
+        ]
+      : []),
+    ...(permissions.canRecordPayment
+      ? [
+          {
+            title: 'Record Payment',
+            icon: 'cash-plus',
+            color: '#10B981',
+            onPress: () => navigation.navigate('CreatePayment'),
+          },
+        ]
+      : []),
+    ...(permissions.canViewTrainers
+      ? [
+          {
+            title: 'View Trainers',
+            icon: 'dumbbell',
+            color: '#F59E0B',
+            onPress: () => navigation.navigate('Trainers'),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <ScrollView
       style={styles.container}
@@ -193,6 +226,28 @@ const DashboardScreen = () => {
           </View>
         ))}
       </View>
+
+      {/* Quick Actions */}
+      {quickActions.length > 0 && (
+        <View style={styles.quickActionsSection}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            {quickActions.map((action, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.quickActionCard}
+                onPress={action.onPress}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}20` }]}>
+                  <Icon source={action.icon} size={24} color={action.color} />
+                </View>
+                <Text style={styles.quickActionText}>{action.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };
@@ -268,5 +323,42 @@ const styles = StyleSheet.create({
   statTitle: {
     fontSize: 14,
     color: '#64748B',
+  },
+  quickActionsSection: {
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0F172A',
+    marginBottom: 16,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  quickActionCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  quickActionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+    flex: 1,
   },
 });

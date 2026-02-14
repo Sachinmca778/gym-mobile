@@ -8,15 +8,15 @@
     "splash": {
       "backgroundColor": "#3B82F6"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.example.gymcrm"
     },
     "android": {
-      "package": "com.example.gymcrm"
+      "package": "com.example.gymcrm",
+      "usesCleartextTraffic": true,
+      "networkSecurityConfig": "xml/network_security_config"
     },
     "web": {
       "bundler": "metro"

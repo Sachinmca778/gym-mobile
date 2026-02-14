@@ -15,9 +15,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, RadioButton } from 'react-native-paper';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../../api/api';
 import { Member, MembershipPlan, MemberSearchItem, MemberMembershipForm } from '../../types';
+import DatePicker from '../../components/DatePicker';
 
 const AssignMembershipScreen = () => {
   const navigation = useNavigation<any>();
@@ -43,9 +43,7 @@ const AssignMembershipScreen = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<MembershipPlan | null>(null);
 
-  // Date picker state
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [startDate, setStartDate] = useState<Date>(new Date());
+  // Date picker state (no longer needed with web-compatible picker)
 
   // Calculate min date (15 days ago)
   const minDate = new Date();
@@ -104,13 +102,8 @@ const AssignMembershipScreen = () => {
     setErrors(prev => ({ ...prev, planId: '' }));
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setStartDate(selectedDate);
-      const formattedDate = selectedDate.toISOString().split('T')[0];
-      setFormData(prev => ({ ...prev, startDate: formattedDate }));
-    }
+  const handleDateChange = (date: string) => {
+    setFormData(prev => ({ ...prev, startDate: date }));
   };
 
   const calculateEndDate = () => {
@@ -441,25 +434,13 @@ const AssignMembershipScreen = () => {
             <View style={styles.formRow}>
               <View style={styles.formField}>
                 <Text style={styles.label}>Start Date *</Text>
-                <TouchableOpacity 
-                  style={[styles.dateInput, errors.startDate && styles.inputError]}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Icon source="calendar" size={20} color="#64748B" />
-                  <Text style={styles.dateText}>
-                    {formData.startDate || 'Select date'}
-                  </Text>
-                </TouchableOpacity>
-                {showDatePicker && (
-                  <DateTimePicker
-                    value={startDate}
-                    mode="date"
-                    display="default"
-                    onChange={handleDateChange}
-                    minimumDate={minDate}
-                  />
-                )}
-                {errors.startDate && <Text style={styles.errorText}>{errors.startDate}</Text>}
+                <DatePicker
+                  label="Start Date"
+                  value={formData.startDate}
+                  onChange={handleDateChange}
+                  minimumDate={minDate}
+                  error={!!errors.startDate}
+                />
               </View>
               
               <View style={styles.formField}>

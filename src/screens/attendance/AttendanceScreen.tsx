@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   Alert,
   ActivityIndicator,
   Platform,
@@ -13,8 +14,9 @@ import api from '../../api/api';
 
 
 const AttendanceScreen = () => {
-  const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
-  const GYM_ID = typeof window !== 'undefined' ? localStorage.getItem('gymId') : null;
+  // Use localStorage (polyfilled for both web and React Native) for userId and gymId
+  const [userId, setUserId] = useState<string | null>(null);
+  const [gymId, setGymId] = useState<string | null>(null);
   const [loadingType, setLoadingType] =
     useState<'CHECK_IN' | 'CHECK_OUT' | null>(null);
 
@@ -26,14 +28,34 @@ const AttendanceScreen = () => {
   const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ================= LOAD USER ID AND GYM ID =================
+  useEffect(() => {
+    const loadIds = async () => {
+      try {
+        // Use localStorage which is polyfilled for both web and React Native
+        const storedUserId = localStorage.getItem('userId');
+        const storedGymId = localStorage.getItem('gymId');
+
+        console.log('Loaded userId:', storedUserId, 'gymId:', storedGymId);
+
+        if (storedUserId) setUserId(storedUserId);
+        if (storedGymId) setGymId(storedGymId);
+      } catch (e) {
+        console.error('Error loading userId/gymId:', e);
+      }
+    };
+
+    loadIds();
+  }, []);
+
   // ================= FETCH ATTENDANCE STATUS =================
   const fetchAttendanceStatus = async () => {
-    if (!userId || !GYM_ID) return;
+    if (!userId || !gymId) return;
 
     // Step 1: Check for today's completed attendance
     try {
       const todayResponse = await api.get(
-        `/api/gyms/${GYM_ID}/attendance/today/${userId}`
+        `/api/gyms/${gymId}/attendance/today/${userId}`
       );
       setTodayAttendance(todayResponse.data);
       setCurrentAttendance(null);
@@ -47,7 +69,7 @@ const AttendanceScreen = () => {
     // Step 2: Check for current open attendance (checked in but not out)
     try {
       const currentResponse = await api.get(
-        `/api/gyms/${GYM_ID}/attendance/current/${userId}`
+        `/api/gyms/${gymId}/attendance/current/${userId}`
       );
       setCurrentAttendance(currentResponse.data);
       setIsCompleted(false);
@@ -98,7 +120,7 @@ const AttendanceScreen = () => {
   // ================= USE EFFECTS =================
   useEffect(() => {
     fetchAttendanceStatus();
-  }, [userId, GYM_ID]);
+  }, [userId, gymId]);
 
   useEffect(() => {
     if (currentAttendance?.checkIn && !isCompleted) {
@@ -122,7 +144,7 @@ const AttendanceScreen = () => {
       setLoadingType('CHECK_IN');
 
       const response = await api.post(
-        `/api/gyms/${GYM_ID}/attendance/check-in/${userId}`,
+        `/api/gyms/${gymId}/attendance/check-in/${userId}`,
         { method: 'MANUAL' }
       );
 
@@ -157,7 +179,7 @@ const handleCheckOut = async () => {
       setLoadingType('CHECK_OUT');
 
       const response = await api.post(
-        `/api/gyms/${GYM_ID}/attendance/check-out/${userId}`
+        `/api/gyms/${gymId}/attendance/check-out/${userId}`
       );
 
       setTodayAttendance(response.data);
@@ -250,7 +272,10 @@ const handleCheckOut = async () => {
 
   // ================= RENDER =================
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+    >
       {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.title}>Gym Attendance</Text>
@@ -341,7 +366,7 @@ const handleCheckOut = async () => {
           Your session duration will be recorded.
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -353,17 +378,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  content: {
     padding: 16,
-    paddingTop: Platform.OS === 'web' ? 20 : 40,
-    maxWidth: Platform.OS === 'web' ? 500 : '100%',
-    alignSelf: 'center',
+    paddingTop: 40,
   },
 
   header: {
     marginBottom: 24,
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#0F172A',
   },

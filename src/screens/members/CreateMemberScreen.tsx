@@ -16,9 +16,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon, Divider, RadioButton } from 'react-native-paper';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../../api/api';
 import { MemberFormData, MembershipPlan } from '../../types';
+import DatePicker from '../../components/DatePicker';
 
 const CreateMemberScreen = () => {
   const navigation = useNavigation<any>();
@@ -52,9 +52,7 @@ const CreateMemberScreen = () => {
     fitnessGoals: '',
   });
 
-  // Date picker state
-  const [showDOBPicker, setShowDOBPicker] = useState(false);
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  // Date picker state (no longer needed with web-compatible picker)
   const [dob, setDob] = useState<Date>(new Date());
   const [startDate, setStartDate] = useState<Date>(new Date());
 
@@ -88,22 +86,12 @@ const CreateMemberScreen = () => {
     }
   };
 
-  const handleDOBChange = (event: any, selectedDate?: Date) => {
-    setShowDOBPicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setDob(selectedDate);
-      const formattedDate = selectedDate.toISOString().split('T')[0];
-      handleInputChange('dateOfBirth', formattedDate);
-    }
+  const handleDOBChange = (date: string) => {
+    handleInputChange('dateOfBirth', date);
   };
 
-  const handleStartDateChange = (event: any, selectedDate?: Date) => {
-    setShowStartDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setStartDate(selectedDate);
-      const formattedDate = selectedDate.toISOString().split('T')[0];
-      handleInputChange('startDate', formattedDate);
-    }
+  const handleStartDateChange = (date: string) => {
+    handleInputChange('startDate', date);
   };
 
   const handleMembershipChange = (planName: string) => {
@@ -246,24 +234,12 @@ const CreateMemberScreen = () => {
             <View style={styles.formRow}>
               <View style={styles.formField}>
                 <Text style={styles.label}>Date of Birth</Text>
-                <TouchableOpacity 
-                  style={styles.dateInput}
-                  onPress={() => setShowDOBPicker(true)}
-                >
-                  <Icon source="calendar" size={20} color="#64748B" />
-                  <Text style={styles.dateText}>
-                    {formData.dateOfBirth || 'Select date'}
-                  </Text>
-                </TouchableOpacity>
-                {showDOBPicker && (
-                  <DateTimePicker
-                    value={dob}
-                    mode="date"
-                    display="default"
-                    onChange={handleDOBChange}
-                    maximumDate={new Date('2005-12-31')}
-                  />
-                )}
+                <DatePicker
+                  label="Date of Birth"
+                  value={formData.dateOfBirth}
+                  onChange={handleDOBChange}
+                  maximumDate={new Date('2005-12-31')}
+                />
               </View>
               
               <View style={styles.formField}>
@@ -515,25 +491,13 @@ const CreateMemberScreen = () => {
             <View style={styles.formRow}>
               <View style={styles.formField}>
                 <Text style={styles.label}>Start Date *</Text>
-                <TouchableOpacity 
-                  style={[styles.dateInput, errors.startDate ? styles.inputError : undefined]}
-                  onPress={() => setShowStartDatePicker(true)}
-                >
-                  <Icon source="calendar" size={20} color="#64748B" />
-                  <Text style={styles.dateText}>
-                    {formData.startDate || 'Select date'}
-                  </Text>
-                </TouchableOpacity>
-                {showStartDatePicker && (
-                  <DateTimePicker
-                    value={startDate}
-                    mode="date"
-                    display="default"
-                    onChange={handleStartDateChange}
-                    minimumDate={minDate}
-                  />
-                )}
-                {errors.startDate && <Text style={styles.errorText}>{errors.startDate}</Text>}
+                <DatePicker
+                  label="Start Date"
+                  value={formData.startDate}
+                  onChange={handleStartDateChange}
+                  minimumDate={minDate}
+                  error={!!errors.startDate}
+                />
               </View>
               
               <View style={styles.formField}>

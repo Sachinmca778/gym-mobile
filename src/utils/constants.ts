@@ -1,8 +1,13 @@
 // API Configuration - Connect to your Spring Boot Backend
 // For local development, use your computer's IP address for mobile access instead of localhost
 // Example: http://192.168.1.100:8082/gym
-export const API_BASE_URL = 'http://localhost:8080';
+
+// IMPORTANT: For Android Emulator, use your computer's IP address, not localhost
+// The Android emulator runs in a virtual machine and localhost refers to the emulator itself
+// Your current IP: 172.16.106.198
+export const API_BASE_URL = 'http://192.168.183.38:8080';
 // NEXT_PUBLIC_API_BASE_URL=http://localhost:8082
+
 
 // Auth Endpoints
 export const AUTH_ENDPOINTS = {

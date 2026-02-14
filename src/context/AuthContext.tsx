@@ -6,44 +6,6 @@ import api from '../api/api';
 import { User, AuthRequest, AuthResponse } from '../types';
 import { API_BASE_URL } from '../utils/constants';
 
-// SecureStore wrapper with fallback for web
-const secureStore = {
-  async getItemAsync(key: string): Promise<string | null> {
-    try {
-      const SecureStore = await import('expo-secure-store');
-      return await SecureStore.getItemAsync(key);
-    } catch {
-      // Fallback for web
-      if (typeof window !== 'undefined') {
-        return localStorage.getItem(key);
-      }
-      return null;
-    }
-  },
-  async setItemAsync(key: string, value: string): Promise<void> {
-    try {
-      const SecureStore = await import('expo-secure-store');
-      await SecureStore.setItemAsync(key, value);
-    } catch {
-      // Fallback for web
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(key, value);
-      }
-    }
-  },
-  async deleteItemAsync(key: string): Promise<void> {
-    try {
-      const SecureStore = await import('expo-secure-store');
-      await SecureStore.deleteItemAsync(key);
-    } catch {
-      // Fallback for web
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(key);
-      }
-    }
-  }
-};
-
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -79,10 +41,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loadStoredUser = async () => {
     try {
-      const token = await secureStore.getItemAsync('accessToken');
-      const role = await secureStore.getItemAsync('userRole');
-      const username = await secureStore.getItemAsync('username');
-      const gymIdStr = await secureStore.getItemAsync('gymId');
+      // localStorage is now polyfilled to work on both web and React Native
+      const token = localStorage.getItem('accessToken');
+      const role = localStorage.getItem('userRole');
+      const username = localStorage.getItem('username');
+      const gymIdStr = localStorage.getItem('gymId');
 
       if (token && role) {
         setUser({
@@ -112,17 +75,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.post<AuthResponse>('/gym/auth/login', credentials);
       const { accessToken, refreshToken, userId, username, role, name } = response.data;
 
-      // Store tokens securely
-      await secureStore.setItemAsync('accessToken', accessToken);
-      await secureStore.setItemAsync('refreshToken', refreshToken);
-      await secureStore.setItemAsync('userRole', role);
-      await secureStore.setItemAsync('username', username);
-      await secureStore.setItemAsync('userId', String(userId));
+      // Store tokens using localStorage (polyfilled for React Native)
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('userRole', role);
+      localStorage.setItem('username', username);
+      localStorage.setItem('userId', String(userId));
 
-      // Store gymId if available in response (would need to be added to AuthResponseDto)
+      // Store gymId if available in response
       const gymId = (response.data as any).gymId;
       if (gymId !== undefined) {
-        await secureStore.setItemAsync('gymId', String(gymId));
+        localStorage.setItem('gymId', String(gymId));
       }
 
       setUser({
@@ -148,8 +111,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Get the token from secureStore
-      const token = await secureStore.getItemAsync('accessToken');
+      // Get the token from localStorage
+      const token = localStorage.getItem('accessToken');
       
       // Use fresh axios instance without interceptors to avoid auth issues
       if (token) {
@@ -159,24 +122,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Backend logout error, clearing local data:', err);
       // Continue with local logout even if backend fails
     } finally {
-      // Clear stored data from both SecureStore and localStorage
-      await secureStore.deleteItemAsync('accessToken');
-      await secureStore.deleteItemAsync('refreshToken');
-      await secureStore.deleteItemAsync('userRole');
-      await secureStore.deleteItemAsync('username');
-      await secureStore.deleteItemAsync('userId');
-      await secureStore.deleteItemAsync('memberId');
-      await secureStore.deleteItemAsync('gymId');
-      
-      // Also clear from localStorage (used by api interceptor)
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('username');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('gymId');
-      }
+      // Clear all stored data
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('username');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('memberId');
+      localStorage.removeItem('gymId');
       
       setUser(null);
     }

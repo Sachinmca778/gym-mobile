@@ -7,21 +7,45 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { Icon } from 'react-native-paper';
+import * as SecureStore from 'expo-secure-store';
 import api from '../../api/api';
 import { Payment } from '../../types';
 
 const MyPaymentHistoryScreen = () => {
-  const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+  const [userId, setUserId] = useState<string | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [totalSpent, setTotalSpent] = useState<number>(0);
 
+  // Load userId on mount
+  useEffect(() => {
+    const loadUserId = async () => {
+      try {
+        if (Platform.OS !== 'web') {
+          const storedUserId = await SecureStore.getItemAsync('userId');
+          if (storedUserId) setUserId(storedUserId);
+        } else {
+          const storedUserId = localStorage.getItem('userId');
+          if (storedUserId) setUserId(storedUserId);
+        }
+      } catch (e) {
+        console.error('Error loading userId:', e);
+      }
+    };
+    loadUserId();
+  }, []);
+
   const fetchPaymentHistory = async () => {
     if (!userId) {
-      Alert.alert('Error', 'User not authenticated');
+      if (Platform.OS === 'web') {
+        window.alert('User not authenticated');
+      } else {
+        Alert.alert('Error', 'User not authenticated');
+      }
       return;
     }
 

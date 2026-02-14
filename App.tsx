@@ -1,3 +1,4 @@
+import './src/utils/polyfills';
 import React from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/context/AuthContext';

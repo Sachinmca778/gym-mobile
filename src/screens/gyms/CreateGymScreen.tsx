@@ -17,6 +17,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import api from '../../api/api';
 import { GymForm } from '../../types';
+import { GYM_ENDPOINTS } from '../../utils/constants';
+
 
 const CreateGymScreen = () => {
   const navigation = useNavigation<any>();
