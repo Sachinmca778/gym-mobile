@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'MANAGER' | 'RECEPTIONIST' | 'TRAINER' | 'MEMBER';
+export type UserRole = 'SUPER_USER' | 'ADMIN' | 'MANAGER' | 'RECEPTIONIST' | 'TRAINER' | 'MEMBER' | 'GUEST';
 
 export interface RolePermissions {
   // Navigation tabs
@@ -33,6 +33,38 @@ export interface RolePermissions {
 }
 
 const rolePermissions: Record<UserRole, RolePermissions> = {
+  SUPER_USER: {
+    // Navigation tabs
+    canViewDashboard: true,
+    canViewMembers: true,
+    canViewAttendance: true,
+    canViewPayments: true,
+    canViewProfile: true,
+
+    // Screen access
+    canCreateMember: true,
+    canEditMember: true,
+    canViewMemberDetails: true,
+    canAssignMembership: true,
+    canCreateMembershipPlan: true,
+    canViewMemberships: true,
+    canRecordPayment: true,
+    canViewProgress: true,
+    canUpdateProgress: true,
+    canViewTrainers: true,
+    canManageTrainers: true,
+    canViewGyms: true,
+    canManageGyms: true,
+    canViewReports: true,
+    canManageUsers: true,
+
+    // Data access
+    canViewAllMembers: true,
+    canViewAssignedMembers: false,
+    canViewOwnData: true,
+    canViewFinancialReports: true,
+  },
+
   ADMIN: {
     // Navigation tabs
     canViewDashboard: true,
@@ -64,6 +96,7 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     canViewOwnData: true,
     canViewFinancialReports: true,
   },
+
   MANAGER: {
     // Navigation tabs
     canViewDashboard: true,
@@ -95,6 +128,7 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     canViewOwnData: true,
     canViewFinancialReports: true,
   },
+
   RECEPTIONIST: {
     // Navigation tabs
     canViewDashboard: true,
@@ -126,6 +160,7 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     canViewOwnData: true,
     canViewFinancialReports: false,
   },
+
   TRAINER: {
     // Navigation tabs
     canViewDashboard: true,
@@ -157,7 +192,40 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     canViewOwnData: true,
     canViewFinancialReports: false,
   },
+
   MEMBER: {
+    // Navigation tabs
+    canViewDashboard: false,
+    canViewMembers: false,
+    canViewAttendance: true,
+    canViewPayments: false,
+    canViewProfile: true,
+
+    // Screen access
+    canCreateMember: false,
+    canEditMember: false,
+    canViewMemberDetails: false,
+    canAssignMembership: false,
+    canCreateMembershipPlan: false,
+    canViewMemberships: true,
+    canRecordPayment: false,
+    canViewProgress: true,
+    canUpdateProgress: false,
+    canViewTrainers: false,
+    canManageTrainers: false,
+    canViewGyms: false,
+    canManageGyms: false,
+    canViewReports: false,
+    canManageUsers: false,
+
+    // Data access
+    canViewAllMembers: false,
+    canViewAssignedMembers: false,
+    canViewOwnData: true,
+    canViewFinancialReports: false,
+  },
+
+  GUEST: {
     // Navigation tabs
     canViewDashboard: false,
     canViewMembers: false,

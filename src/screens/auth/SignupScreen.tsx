@@ -164,9 +164,11 @@ const SignupScreen = () => {
                 onValueChange={(value) => setSelectedRole(value)}
                 style={styles.picker}
               >
-                <Picker.Item label="MEMBER" value="MEMBER" />
-                <Picker.Item label="TRAINER" value="TRAINER" />
+                <Picker.Item label="SUPER_USER" value="SUPER_USER" />
                 <Picker.Item label="ADMIN" value="ADMIN" />
+                <Picker.Item label="RECEPTIONIST" value="RECEPTIONIST" />
+                <Picker.Item label="TRAINER" value="TRAINER" />
+                <Picker.Item label="MEMBER" value="MEMBER" />
               </Picker>
             </View>
 
