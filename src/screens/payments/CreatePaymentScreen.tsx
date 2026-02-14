@@ -18,7 +18,7 @@ import { Icon, RadioButton } from 'react-native-paper';
 import api from '../../api/api';
 import {
   PaymentForm,
-  MemberSearchResult,
+  UserSearchResult,
   MembershipPlanSelect,
 } from '../../types';
 
@@ -27,7 +27,7 @@ const CreatePaymentScreen = () => {
 
   // Form state
   const [formData, setFormData] = useState<PaymentForm>({
-    memberId: 0,
+    userId: 0,
     amount: 0,
     paymentMethod: 'UPI',
     status: 'COMPLETED',
@@ -41,13 +41,13 @@ const CreatePaymentScreen = () => {
 
   // Search state
   const [memberSearch, setMemberSearch] = useState('');
-  const [memberSearchResults, setMemberSearchResults] = useState<MemberSearchResult[]>([]);
+  const [memberSearchResults, setMemberSearchResults] = useState<UserSearchResult[]>([]);
   const [showMemberDropdown, setShowMemberDropdown] = useState(false);
   const [searchingMembers, setSearchingMembers] = useState(false);
 
   // Data
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlanSelect[]>([]);
-  const [selectedMember, setSelectedMember] = useState<MemberSearchResult | null>(null);
+  const [selectedMember, setSelectedMember] = useState<UserSearchResult | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<MembershipPlanSelect | null>(null);
 
   // Fetch membership plans
@@ -76,12 +76,12 @@ const CreatePaymentScreen = () => {
 
     try {
       setSearchingMembers(true);
-      const response = await api.get(`/gym/members/search?searchTerm=${searchTerm}&page=0&size=10`);
+      const response = await api.get(`/gym/users/search?searchTerm=${searchTerm}`);
       const data = response.data;
-      setMemberSearchResults(data.content || data || []);
+      setMemberSearchResults(data || []);
       setShowMemberDropdown(true);
     } catch (error) {
-      console.error('Error searching members:', error);
+      console.error('Error searching users:', error);
       setMemberSearchResults([]);
     } finally {
       setSearchingMembers(false);
@@ -102,9 +102,9 @@ const CreatePaymentScreen = () => {
     }
   };
 
-  const handleSelectMember = (member: MemberSearchResult) => {
+  const handleSelectMember = (member: UserSearchResult) => {
     setSelectedMember(member);
-    setFormData(prev => ({ ...prev, memberId: member.id }));
+    setFormData(prev => ({ ...prev, userId: member.id }));
     setMemberSearch(`${member.firstName} ${member.lastName}`);
     setShowMemberDropdown(false);
     setMemberSearch('');
@@ -121,7 +121,7 @@ const CreatePaymentScreen = () => {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.memberId) newErrors.member = 'Please select a member';
+    if (!formData.userId) newErrors.member = 'Please select a member';
     if (!formData.amount || formData.amount <= 0) newErrors.amount = 'Please enter a valid amount';
     if (!formData.paymentDate) newErrors.paymentDate = 'Please select a payment date';
     setErrors(newErrors);
@@ -146,7 +146,7 @@ const CreatePaymentScreen = () => {
       };
 
       const payload = {
-        memberId: formData.memberId,
+        userId: formData.userId,
         amount: Number(formData.amount),
         paymentMethod: formData.paymentMethod,
         status: formData.status,
@@ -240,7 +240,7 @@ const CreatePaymentScreen = () => {
                     setMemberSearch(value);
                     if (selectedMember) {
                       setSelectedMember(null);
-                      setFormData(prev => ({ ...prev, memberId: 0 }));
+                      setFormData(prev => ({ ...prev, userId: 0 }));
                     }
                   }}
                 />
@@ -265,7 +265,7 @@ const CreatePaymentScreen = () => {
                           <Text style={styles.memberName}>
                             {item.firstName} {item.lastName}
                           </Text>
-                          <Text style={styles.memberCode}>{item.memberCode}</Text>
+                          <Text style={styles.memberCode}>{item.role}</Text>
                         </View>
                         <Text style={styles.memberPhone}>{item.phone}</Text>
                       </TouchableOpacity>

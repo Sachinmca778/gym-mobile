@@ -84,7 +84,7 @@ export interface Attendance {
 
 export interface Payment {
   id: number;
-  memberId: number;
+  userId: number;
   memberName?: string;
   membershipId?: number;
   amount: number;
@@ -98,7 +98,7 @@ export interface Payment {
 }
 
 export interface PaymentForm {
-  memberId: number;
+  userId: number;
   membershipId?: number;
   amount: number;
   paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'ONLINE' | 'BANK_TRANSFER';
@@ -124,6 +124,16 @@ export interface MemberSearchResult {
   email: string;
   phone: string;
   status: string;
+}
+
+export interface UserSearchResult {
+  id: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: string;
 }
 
 export interface MembershipPlanSelect {
