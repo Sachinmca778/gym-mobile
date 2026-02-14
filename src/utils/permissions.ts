@@ -284,6 +284,8 @@ export const canAccessScreen = (userRole: string, screenName: string): boolean =
       return permissions.canViewProfile;
     case 'MyPaymentHistory':
       return true;
+    case 'Signup':
+      return permissions.canManageUsers;
     case 'CreateMember':
       return permissions.canCreateMember;
     case 'MemberDetail':

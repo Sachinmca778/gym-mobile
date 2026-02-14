@@ -32,5 +32,6 @@ export type BottomTabParamList = {
   Attendance: undefined;
   Payments: undefined;
   Profile: undefined;
+  Signup: undefined;
 };
 

@@ -20,6 +20,8 @@ const SignupScreen = () => {
   const navigation = useNavigation<any>();
   const [isLoading, setIsLoading] = useState(false);
   const [gyms, setGyms] = useState<Gym[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('');
+  const [isSuperUser, setIsSuperUser] = useState<boolean>(false);
   const [selectedRole, setSelectedRole] = useState('MEMBER');
   const [formData, setFormData] = useState({
     username: '',
@@ -29,8 +31,38 @@ const SignupScreen = () => {
     firstName: '',
     lastName: '',
     phone: '',
-    gymId: '',
+    gym: '',
   });
+
+  // Role assignment mapping - defines which roles each user can assign
+  const roleAssignmentMap: Record<string, string[]> = {
+    SUPER_USER: ['SUPER_USER', 'ADMIN', 'RECEPTIONIST', 'TRAINER', 'MEMBER'],
+    ADMIN: ['RECEPTIONIST', 'TRAINER', 'MEMBER'],
+    RECEPTIONIST: ['MEMBER', 'TRAINER'],
+  };
+
+  // Get available roles based on current user role
+  const getAvailableRoles = (): { label: string; value: string }[] => {
+    const availableRoles = roleAssignmentMap[currentUserRole] || ['MEMBER'];
+    return availableRoles.map(role => ({
+      label: role,
+      value: role,
+    }));
+  };
+
+  useEffect(() => {
+    // Get current user role from localStorage
+    const userRole = localStorage.getItem('userRole') || '';
+    const gymIdStr = localStorage.getItem('gymId');
+
+    setCurrentUserRole(userRole);
+    setIsSuperUser(userRole === 'SUPER_USER');
+
+    // If user is not SUPER_USER, auto-fill gymId from localStorage
+    if (userRole !== 'SUPER_USER' && gymIdStr) {
+      setFormData(prev => ({ ...prev, gym: gymIdStr }));
+    }
+  }, []);
 
   useEffect(() => {
     const fetchGyms = async () => {
@@ -78,8 +110,8 @@ const SignupScreen = () => {
         role: selectedRole,
       };
 
-      if (formData.gymId) {
-        requestData.gymId = parseInt(formData.gymId);
+      if (formData.gym) {
+        requestData.gym = parseInt(formData.gym);
       }
 
       const response = await api.post('/gym/auth/register', requestData);
@@ -164,11 +196,9 @@ const SignupScreen = () => {
                 onValueChange={(value) => setSelectedRole(value)}
                 style={styles.picker}
               >
-                <Picker.Item label="SUPER_USER" value="SUPER_USER" />
-                <Picker.Item label="ADMIN" value="ADMIN" />
-                <Picker.Item label="RECEPTIONIST" value="RECEPTIONIST" />
-                <Picker.Item label="TRAINER" value="TRAINER" />
-                <Picker.Item label="MEMBER" value="MEMBER" />
+                {getAvailableRoles().map((role) => (
+                  <Picker.Item key={role.value} label={role.label} value={role.value} />
+                ))}
               </Picker>
             </View>
 
@@ -190,19 +220,31 @@ const SignupScreen = () => {
               secureTextEntry
             />
 
-            <Text style={styles.label}>Select Gym (Optional)</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={formData.gymId}
-                onValueChange={(value) => handleChange('gymId', value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Select a gym (optional)" value="" />
-                {gyms.map((gym) => (
-                  <Picker.Item key={gym.id} label={gym.name} value={gym.id.toString()} />
-                ))}
-              </Picker>
-            </View>
+            {/* Show gym picker only for SUPER_USER */}
+            {isSuperUser ? (
+              <>
+                <Text style={styles.label}>Select Gym (Optional)</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={formData.gym}
+                    onValueChange={(value) => handleChange('gym', value)}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Select a gym (optional)" value="" />
+                    {gyms.map((gym) => (
+                      <Picker.Item key={gym.id} label={gym.name} value={gym.id.toString()} />
+                    ))}
+                  </Picker>
+                </View>
+              </>
+            ) : (
+              // For non-SUPER_USER, gymId is auto-filled from localStorage (hidden field)
+              <TextInput
+                style={[styles.input, { display: 'none' }]}
+                value={formData.gym}
+                onChangeText={(value) => handleChange('gym', value)}
+              />
+            )}
 
             <TouchableOpacity
               style={styles.signupButton}

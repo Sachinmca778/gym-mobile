@@ -74,6 +74,9 @@ const TabNavigator = () => {
             case 'Profile':
               iconName = focused ? 'account' : 'account-outline';
               break;
+            case 'Signup':
+              iconName = focused ? 'account' : 'account-outline';
+              break;
           }
 
           return <Icon source={iconName} size={size} color={color} />;
@@ -91,6 +94,7 @@ const TabNavigator = () => {
       {renderTabScreen('Attendance', AttendanceScreen, { title: 'Attendance' })}
       {renderTabScreen('Payments', PaymentsScreen, { title: 'Payments' })}
       {renderTabScreen('Profile', ProfileScreen, { title: 'Profile' })}
+      {renderTabScreen('Signup', SignupScreen, { title: 'Create User' })}
     </Tab.Navigator>
   );
 };
@@ -149,6 +153,7 @@ const AppNavigator = () => {
               component={TabNavigator}
               options={{ headerShown: false }}
             />
+            {renderStackScreen('Signup', SignupScreen, { title: 'Signup' })}
             {renderStackScreen('MemberDetail', MemberDetailScreen, { title: 'Member Details' })}
             {renderStackScreen('CreateMember', CreateMemberScreen, { title: 'Add New Member' })}
             {renderStackScreen('AssignMembership', AssignMembershipScreen, { title: 'Assign Membership' })}
