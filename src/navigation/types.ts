@@ -24,7 +24,17 @@ export type RootStackParamList = {
   Settings: undefined;
 };
 
-
+export type DrawerParamList = {
+  Dashboard: undefined;
+  Members: undefined;
+  Attendance: undefined;
+  Payments: undefined;
+  Memberships: undefined;
+  Trainers: undefined;
+  Gyms: undefined;
+  Profile: undefined;
+  Signup: undefined;
+};
 
 export type BottomTabParamList = {
   Dashboard: undefined;

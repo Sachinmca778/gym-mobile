@@ -1,10 +1,11 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Icon } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
-import { canAccessScreen } from '../utils/permissions';
+import { canAccessScreen, getRolePermissions } from '../utils/permissions';
 
 // Auth Screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -30,72 +31,79 @@ import TrainersScreen from '../screens/trainers/TrainersScreen';
 import TrainerDetailScreen from '../screens/trainers/TrainerDetailScreen';
 import CreateTrainerScreen from '../screens/trainers/CreateTrainerScreen';
 
-import { RootStackParamList, BottomTabParamList } from './types';
+import { RootStackParamList, DrawerParamList, BottomTabParamList } from './types';
+import CustomSidebar from '../components/CustomSidebar';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator<BottomTabParamList>();
+const Drawer = createDrawerNavigator<DrawerParamList>();
+const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
-const TabNavigator = () => {
+// Drawer Navigator with permission-based menu items
+const DrawerNavigator = () => {
   const { user } = useAuth();
+  const permissions = getRolePermissions(user?.role || '');
 
-  const renderTabScreen = (name: string, component: any, options: any) => {
-    if (canAccessScreen(user?.role || '', name)) {
-      return (
-        <Tab.Screen
-          key={name}
-          name={name}
-          component={component}
-          options={options}
-        />
-      );
-    }
-    return null;
-  };
+  // Define menu items with their required permissions
+  const menuItems = [
+    { name: 'Dashboard', component: DashboardScreen, icon: 'view-dashboard', permission: 'canViewDashboard' },
+    { name: 'Members', component: MembersScreen, icon: 'account-group', permission: 'canViewMembers' },
+    { name: 'Attendance', component: AttendanceScreen, icon: 'check-circle', permission: 'canViewAttendance' },
+    { name: 'Payments', component: PaymentsScreen, icon: 'credit-card', permission: 'canViewPayments' },
+    { name: 'Memberships', component: MembershipsScreen, icon: 'card-account-details', permission: 'canViewMemberships' },
+    { name: 'Trainers', component: TrainersScreen, icon: 'dumbbell', permission: 'canViewTrainers' },
+    { name: 'Gyms', component: GymsScreen, icon: 'home-city', permission: 'canViewGyms' },
+    { name: 'Profile', component: ProfileScreen, icon: 'account', permission: 'canViewProfile' },
+  ];
+
+  // Filter menu items based on permissions
+  const allowedMenuItems = menuItems.filter(item => {
+    if (!item.permission) return true;
+    return permissions[item.permission as keyof typeof permissions] === true;
+  });
+
+  // If user can manage users, add Signup screen
+  if (permissions.canManageUsers) {
+    allowedMenuItems.push({ 
+      name: 'Signup', 
+      component: SignupScreen, 
+      icon: 'account-plus', 
+      permission: 'canManageUsers' 
+    });
+  }
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: string = '';
-
-          switch (route.name) {
-            case 'Dashboard':
-              iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
-              break;
-            case 'Members':
-              iconName = focused ? 'account-group' : 'account-group-outline';
-              break;
-            case 'Attendance':
-              iconName = focused ? 'check-circle' : 'check-circle-outline';
-              break;
-            case 'Payments':
-              iconName = focused ? 'credit-card' : 'credit-card-outline';
-              break;
-            case 'Profile':
-              iconName = focused ? 'account' : 'account-outline';
-              break;
-            case 'Signup':
-              iconName = focused ? 'account' : 'account-outline';
-              break;
-          }
-
-          return <Icon source={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: '#64748B',
+    <Drawer.Navigator
+      drawerContent={(props) => <CustomSidebar {...props} />}
+      screenOptions={{
         headerStyle: {
           backgroundColor: '#3B82F6',
         },
         headerTintColor: '#FFFFFF',
-      })}
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+        drawerActiveTintColor: '#3B82F6',
+        drawerInactiveTintColor: '#64748B',
+        drawerLabelStyle: {
+          marginLeft: -20,
+          fontSize: 15,
+        },
+      }}
     >
-      {renderTabScreen('Dashboard', DashboardScreen, { title: 'Dashboard' })}
-      {renderTabScreen('Members', MembersScreen, { title: 'Members' })}
-      {renderTabScreen('Attendance', AttendanceScreen, { title: 'Attendance' })}
-      {renderTabScreen('Payments', PaymentsScreen, { title: 'Payments' })}
-      {renderTabScreen('Profile', ProfileScreen, { title: 'Profile' })}
-      {renderTabScreen('Signup', SignupScreen, { title: 'Create User' })}
-    </Tab.Navigator>
+      {allowedMenuItems.map((item) => (
+        <Drawer.Screen
+          key={item.name}
+          name={item.name as keyof DrawerParamList}
+          component={item.component}
+          options={{
+            title: item.name === 'Signup' ? 'Create User' : item.name,
+            drawerIcon: ({ focused, color, size }) => (
+              <Icon source={item.icon} size={size} color={color} />
+            ),
+          }}
+        />
+      ))}
+    </Drawer.Navigator>
   );
 };
 
@@ -150,7 +158,7 @@ const AppNavigator = () => {
           <>
             <Stack.Screen
               name="Main"
-              component={TabNavigator}
+              component={DrawerNavigator}
               options={{ headerShown: false }}
             />
             {renderStackScreen('Signup', SignupScreen, { title: 'Signup' })}
