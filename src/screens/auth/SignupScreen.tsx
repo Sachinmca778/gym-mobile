@@ -263,7 +263,7 @@ const SignupScreen = () => {
               onPress={() => navigation.navigate('Login')}
             >
               <Text style={styles.loginText}>
-                Already have an account? <Text style={styles.loginLink}>Sign In</Text>
+                {/* Already have an account? <Text style={styles.loginLink}>Sign In</Text> */}
               </Text>
             </TouchableOpacity>
           </View>

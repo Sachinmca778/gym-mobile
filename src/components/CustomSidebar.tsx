@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { Icon } from 'react-native-paper';
@@ -42,8 +43,25 @@ const CustomSidebar = (props: DrawerContentComponentProps) => {
   });
 
   const handleLogout = () => {
-    logout();
-    props.navigation.closeDrawer();
+    Alert.alert(
+      'Confirm Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: () => {
+            logout();
+            props.navigation.closeDrawer();
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const getRoleLabel = (role: string) => {
