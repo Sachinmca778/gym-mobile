@@ -40,6 +40,7 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     canViewAttendance: false,
     canViewPayments: true,
     canViewProfile: true,
+    canManageUsers: true,
 
     // Screen access
     canCreateMember: false,
@@ -56,7 +57,6 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     canViewGyms: true,
     canManageGyms: true,
     canViewReports: true,
-    canManageUsers: true,
 
     // Data access
     canViewAllMembers: true,
@@ -72,6 +72,7 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     canViewAttendance: false,
     canViewPayments: true,
     canViewProfile: true,
+    canManageUsers: true,
 
     // Screen access
     canCreateMember: false,
@@ -88,7 +89,6 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     canViewGyms: true,
     canManageGyms: false,
     canViewReports: true,
-    canManageUsers: true,
 
     // Data access
     canViewAllMembers: true,

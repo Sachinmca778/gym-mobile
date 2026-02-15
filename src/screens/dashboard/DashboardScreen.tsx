@@ -139,8 +139,11 @@ const DashboardScreen = () => {
     ...(permissions.canManageGyms
       ? [{ label: 'Add Gym', icon: 'home-plus', screen: 'Gyms' }]
       : []),
-    ...(permissions.canCreateMember
-      ? [{ label: 'Add Member', icon: 'account-plus', screen: 'CreateMember' }]
+    ...(permissions.canCreateMembershipPlan
+      ? [{ label: 'Create MembershipPlan', icon: 'card-plus', screen: 'CreateMembershipPlan' }]
+      : []),
+    ...(permissions.canManageUsers
+      ? [{ label: 'Add User', icon: 'account-plus', screen: 'Signup' }]
       : []),
     ...(permissions.canRecordPayment
       ? [{ label: 'Record Payment', icon: 'cash-plus', screen: 'CreatePayment' }]
