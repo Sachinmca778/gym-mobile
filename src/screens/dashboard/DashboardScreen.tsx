@@ -123,16 +123,34 @@ const DashboardScreen = () => {
 
   const stats = [
     {
-      title: 'Total Members',
-      value: summary?.totalMembers || 0,
+      title: 'Total Users',
+      value: summary?.totalUsers || 0,
       icon: 'account-group',
       color: '#3B82F6',
     },
     {
-      title: 'Active Members',
-      value: summary?.activeMembers || 0,
+      title: 'Active Users',
+      value: summary?.activeUsers || 0,
       icon: 'check-circle',
       color: '#10B981',
+    },
+    {
+      title: 'Staff Count',
+      value: summary?.staffCount || 0,
+      icon: 'account-group',
+      color: '#3B82F6',
+    },
+    {
+      title: 'Member Count',
+      value: summary?.memberCount || 0,
+      icon: 'account-group',
+      color: '#3B82F6',
+    },
+    {
+      title: 'Trainer Count',
+      value: summary?.trainerCount || 0,
+      icon: 'account-group',
+      color: '#3B82F6',
     },
     ...(permissions.canViewFinancialReports
       ? [

@@ -176,12 +176,15 @@ export interface Gym {
 }
 
 export interface DashboardSummary {
-  totalMembers: number;
-  activeMembers: number;
+  totalUsers: number;
+  activeUsers: number;
   totalPaymentsCurrentMonth: number;
   expiringMembersCount: number;
   pendingPayments: number;
   todayAttendance: number;
+  staffCount:number;
+  trainerCount:number;
+  memberCount:number;
 }
 
 export interface AuthRequest {

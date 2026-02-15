@@ -36,22 +36,22 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
   SUPER_USER: {
     // Navigation tabs
     canViewDashboard: true,
-    canViewMembers: true,
-    canViewAttendance: true,
+    canViewMembers: false,
+    canViewAttendance: false,
     canViewPayments: true,
     canViewProfile: true,
 
     // Screen access
-    canCreateMember: true,
-    canEditMember: true,
-    canViewMemberDetails: true,
+    canCreateMember: false,
+    canEditMember: false,
+    canViewMemberDetails: false,
     canAssignMembership: true,
     canCreateMembershipPlan: true,
     canViewMemberships: true,
-    canRecordPayment: true,
+    canRecordPayment: false,
     canViewProgress: true,
     canUpdateProgress: true,
-    canViewTrainers: true,
+    canViewTrainers: false,
     canManageTrainers: true,
     canViewGyms: true,
     canManageGyms: true,
@@ -68,13 +68,13 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
   ADMIN: {
     // Navigation tabs
     canViewDashboard: true,
-    canViewMembers: true,
-    canViewAttendance: true,
+    canViewMembers: false,
+    canViewAttendance: false,
     canViewPayments: true,
     canViewProfile: true,
 
     // Screen access
-    canCreateMember: true,
+    canCreateMember: false,
     canEditMember: true,
     canViewMemberDetails: true,
     canAssignMembership: true,
@@ -86,7 +86,7 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     canViewTrainers: true,
     canManageTrainers: true,
     canViewGyms: true,
-    canManageGyms: true,
+    canManageGyms: false,
     canViewReports: true,
     canManageUsers: true,
 
@@ -101,12 +101,12 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     // Navigation tabs
     canViewDashboard: true,
     canViewMembers: true,
-    canViewAttendance: true,
+    canViewAttendance: false,
     canViewPayments: true,
     canViewProfile: true,
 
     // Screen access
-    canCreateMember: true,
+    canCreateMember: false,
     canEditMember: true,
     canViewMemberDetails: true,
     canAssignMembership: true,
@@ -133,12 +133,12 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
     // Navigation tabs
     canViewDashboard: true,
     canViewMembers: true,
-    canViewAttendance: true,
+    canViewAttendance: false,
     canViewPayments: true,
     canViewProfile: true,
 
     // Screen access
-    canCreateMember: true,
+    canCreateMember: false,
     canEditMember: false,
     canViewMemberDetails: true,
     canAssignMembership: false,
