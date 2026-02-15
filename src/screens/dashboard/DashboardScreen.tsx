@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import * as SecureStore from 'expo-secure-store';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/api';
 import { DashboardSummary } from '../../types';
@@ -102,169 +103,106 @@ const DashboardScreen = () => {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: performLogout,
-        },
+        { text: 'Logout', style: 'destructive', onPress: performLogout },
       ],
       { cancelable: true }
     );
   };
 
-
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#4F46E5" />
       </View>
     );
   }
 
   const stats = [
-    {
-      title: 'Total Users',
-      value: summary?.totalUsers || 0,
-      icon: 'account-group',
-      color: '#3B82F6',
-    },
-    {
-      title: 'Active Users',
-      value: summary?.activeUsers || 0,
-      icon: 'check-circle',
-      color: '#10B981',
-    },
-    {
-      title: 'Staff Count',
-      value: summary?.staffCount || 0,
-      icon: 'account-group',
-      color: '#3B82F6',
-    },
-    {
-      title: 'Member Count',
-      value: summary?.memberCount || 0,
-      icon: 'account-group',
-      color: '#3B82F6',
-    },
-    {
-      title: 'Trainer Count',
-      value: summary?.trainerCount || 0,
-      icon: 'account-group',
-      color: '#3B82F6',
-    },
+    { label: 'Total Users', value: summary?.totalUsers || 0, icon: 'account-group', color: '#4F46E5' },
+    { label: 'Active Users', value: summary?.activeUsers || 0, icon: 'check-circle', color: '#10B981' },
+    { label: 'Staff', value: summary?.staffCount || 0, icon: 'account-tie', color: '#F59E0B' },
+    { label: 'Members', value: summary?.memberCount || 0, icon: 'account', color: '#6366F1' },
+    { label: 'Trainers', value: summary?.trainerCount || 0, icon: 'dumbbell', color: '#EC4899' },
     ...(permissions.canViewFinancialReports
       ? [
           {
-            title: 'Monthly Revenue',
+            label: 'Revenue',
             value: `₹${summary?.totalPaymentsCurrentMonth || 0}`,
             icon: 'currency-inr',
-            color: '#F59E0B',
+            color: '#14B8A6',
           },
         ]
       : []),
   ];
 
-  // Quick actions for admin users
   const quickActions = [
     ...(permissions.canManageGyms
-      ? [
-          {
-            title: 'Add New Gym',
-            icon: 'home-plus',
-            color: '#8B5CF6',
-            onPress: () => navigation.navigate('Gyms'),
-          },
-        ]
+      ? [{ label: 'Add Gym', icon: 'home-plus', screen: 'Gyms' }]
       : []),
     ...(permissions.canCreateMember
-      ? [
-          {
-            title: 'Add Member',
-            icon: 'account-plus',
-            color: '#3B82F6',
-            onPress: () => navigation.navigate('CreateMember'),
-          },
-        ]
+      ? [{ label: 'Add Member', icon: 'account-plus', screen: 'CreateMember' }]
       : []),
     ...(permissions.canRecordPayment
-      ? [
-          {
-            title: 'Record Payment',
-            icon: 'cash-plus',
-            color: '#10B981',
-            onPress: () => navigation.navigate('CreatePayment'),
-          },
-        ]
+      ? [{ label: 'Record Payment', icon: 'cash-plus', screen: 'CreatePayment' }]
       : []),
     ...(permissions.canViewTrainers
-      ? [
-          {
-            title: 'View Trainers',
-            icon: 'dumbbell',
-            color: '#F59E0B',
-            onPress: () => navigation.navigate('Trainers'),
-          },
-        ]
+      ? [{ label: 'View Trainers', icon: 'dumbbell', screen: 'Trainers' }]
       : []),
   ];
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={{ paddingBottom: 30 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      showsVerticalScrollIndicator={false}
     >
-      {/* Header */}
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['rgb(0 0 0)', 'rgb(99, 102, 241)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <View>
-          <Text style={styles.greeting}>Welcome Back!</Text>
-          <Text style={styles.title}>Dashboard</Text>
+          <Text style={styles.welcome}>Welcome back,</Text>
+          <Text style={styles.username}>{user?.username || 'Admin'} 👋</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.logoutButton}
-          activeOpacity={0.7}
-          onPress={handleLogout}
-        >
-          <View pointerEvents="none">
-            <Icon source="logout" size={20} color="#EF4444" />
-          </View>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Icon source="logout" size={22} color="#fff" />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
-      {/* Stats */}
-      <View style={styles.statsGrid}>
-        {stats.map((item, i) => (
-          <View key={i} style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: `${item.color}20` }]}>
-              <Icon source={item.icon} size={24} color={item.color} />
+      {/* STATS */}
+      <View style={styles.statsWrapper}>
+        {stats.map((item, index) => (
+          <View key={index} style={styles.statCard}>
+            <View style={[styles.iconCircle, { backgroundColor: `${item.color}20` }]}>
+              <Icon source={item.icon} size={22} color={item.color} />
             </View>
             <Text style={styles.statValue}>{item.value}</Text>
-            <Text style={styles.statTitle}>{item.title}</Text>
+            <Text style={styles.statLabel}>{item.label}</Text>
           </View>
         ))}
       </View>
 
-      {/* Quick Actions */}
+      {/* QUICK ACTIONS */}
       {quickActions.length > 0 && (
-        <View style={styles.quickActionsSection}>
+        <>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
+          <View style={styles.actionsWrapper}>
             {quickActions.map((action, index) => (
               <TouchableOpacity
                 key={index}
-                style={styles.quickActionCard}
-                onPress={action.onPress}
-                activeOpacity={0.7}
+                style={styles.actionCard}
+                onPress={() => navigation.navigate(action.screen)}
               >
-                <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}20` }]}>
-                  <Icon source={action.icon} size={24} color={action.color} />
-                </View>
-                <Text style={styles.quickActionText}>{action.title}</Text>
+                <Icon source={action.icon} size={24} color="#4F46E5" />
+                <Text style={styles.actionText}>{action.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </>
       )}
     </ScrollView>
   );
@@ -277,106 +215,103 @@ export default DashboardScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F3F4F6',
   },
-  content: {
-    padding: 16,
-    paddingTop: 40,
-  },
-  loadingContainer: {
+  loader: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   header: {
+    paddingTop: 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
   },
-  greeting: {
-    fontSize: 16,
-    color: '#64748B',
+  welcome: {
+    color: '#E0E7FF',
+    fontSize: 14,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0F172A',
+  username: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 4,
   },
-  logoutButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    zIndex: 10,
+  logoutBtn: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 10,
+    borderRadius: 12,
   },
-  statsGrid: {
+
+  statsWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
   statCard: {
     width: '48%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 16,
+    elevation: 5,
   },
-  statIcon: {
-    width: 48,
-    height: 48,
+  iconCircle: {
+    width: 42,
+    height: 42,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0F172A',
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 10,
+    color: '#111827',
   },
-  statTitle: {
-    fontSize: 14,
-    color: '#64748B',
+  statLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
   },
-  quickActionsSection: {
-    marginTop: 8,
-  },
+
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0F172A',
-    marginBottom: 16,
+    fontWeight: '700',
+    marginTop: 10,
+    marginBottom: 15,
+    paddingHorizontal: 20,
+    color: '#111827',
   },
-  quickActionsGrid: {
+
+  actionsWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
   },
-  quickActionCard: {
+  actionCard: {
     width: '48%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 15,
     flexDirection: 'row',
     alignItems: 'center',
+    elevation: 3,
   },
-  quickActionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  quickActionText: {
+  actionText: {
+    marginLeft: 12,
     fontSize: 14,
     fontWeight: '600',
-    color: '#0F172A',
-    flex: 1,
+    color: '#111827',
   },
 });
