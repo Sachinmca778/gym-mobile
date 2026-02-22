@@ -68,8 +68,8 @@ const GymsScreen = () => {
     );
   };
 
-  const getStatusColor = (isActive: boolean) => {
-    return isActive ? '#10B981' : '#EF4444';
+  const getStatusColor = (active: boolean) => {
+    return active ? '#10B981' : '#EF4444';
   };
 
   const renderGymCard = ({ item }: { item: Gym }) => (
@@ -85,17 +85,17 @@ const GymsScreen = () => {
         <View
           style={[
             styles.statusBadge,
-            { backgroundColor: `${getStatusColor(item.isActive)}15` },
+            { backgroundColor: `${getStatusColor(item.active)}15` },
           ]}
         >
           <View
             style={[
               styles.statusDot,
-              { backgroundColor: getStatusColor(item.isActive) },
+              { backgroundColor: getStatusColor(item.active) },
             ]}
           />
-          <Text style={[styles.statusText, { color: getStatusColor(item.isActive) }]}>
-            {item.isActive ? 'Active' : 'Inactive'}
+          <Text style={[styles.statusText, { color: getStatusColor(item.active) }]}>
+            {item.active ? 'Active' : 'Inactive'}
           </Text>
         </View>
       </View>
