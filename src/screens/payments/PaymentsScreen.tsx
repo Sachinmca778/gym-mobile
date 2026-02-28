@@ -15,6 +15,24 @@ import { Icon } from 'react-native-paper';
 import api from '../../api/api';
 import { Payment, PaymentSummary } from '../../types';
 
+// Filter type enum
+type FilterType = 'RECENT' | 'TODAY_EXPIRES' | 'UPCOMING_7_DAYS' | 'OVERDUES';
+
+interface PaginatedResponse {
+  content: Payment[];
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+const filterOptions: { label: string; value: FilterType; icon: string }[] = [
+  { label: 'Recent Transactions', value: 'RECENT', icon: 'history' },
+  { label: 'Today Expires', value: 'TODAY_EXPIRES', icon: 'calendar-today' },
+  { label: 'Upcoming (7 Days)', value: 'UPCOMING_7_DAYS', icon: 'calendar-week' },
+  { label: 'Overdues', value: 'OVERDUES', icon: 'alert-circle' },
+];
+
 const PaymentsScreen = () => {
   const navigation = useNavigation<any>();
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -22,19 +40,43 @@ const PaymentsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(true);
+  
+  // Filter state
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('RECENT');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const pageSize = 5;
 
   const fetchData = useCallback(async () => {
     try {
+      setLoading(true);
+      
+      const params = {
+        filter: selectedFilter,
+        page: currentPage,
+        size: pageSize,
+      };
+      
       const [paymentsRes, summaryRes] = await Promise.all([
-        api.get('/gym/payments/all_payments'),
+        api.get('/gym/payments/all_payments', { params }),
         api.get('/gym/payments/summary').catch(() => ({ data: null })),
       ]);
       
       const paymentsData = paymentsRes.data;
-      if (Array.isArray(paymentsData)) {
-        setPayments(paymentsData);
-      } else if (paymentsData.content) {
+      if (paymentsData.content) {
         setPayments(paymentsData.content);
+        setTotalElements(paymentsData.totalElements || 0);
+        setTotalPages(paymentsData.totalPages || 0);
+        setCurrentPage(paymentsData.currentPage || 0);
+      } else if (Array.isArray(paymentsData)) {
+        setPayments(paymentsData);
+        setTotalElements(paymentsData.length);
+        setTotalPages(1);
+        setCurrentPage(0);
       }
       
       if (summaryRes.data) {
@@ -44,9 +86,20 @@ const PaymentsScreen = () => {
       console.error('Error fetching data:', error);
       // Try to fetch payments only if summary fails
       try {
-        const paymentsRes = await api.get('/gym/payments/all_payments');
+        const params = {
+          filter: selectedFilter,
+          page: currentPage,
+          size: pageSize,
+        };
+        const paymentsRes = await api.get('/gym/payments/all_payments', { params });
         const paymentsData = paymentsRes.data;
-        setPayments(Array.isArray(paymentsData) ? paymentsData : paymentsData.content || []);
+        if (paymentsData.content) {
+          setPayments(paymentsData.content);
+          setTotalElements(paymentsData.totalElements || 0);
+          setTotalPages(paymentsData.totalPages || 0);
+        } else {
+          setPayments(Array.isArray(paymentsData) ? paymentsData : paymentsData.content || []);
+        }
       } catch (e) {
         console.error('Error fetching payments:', e);
         Alert.alert('Error', 'Failed to fetch payments');
@@ -55,7 +108,7 @@ const PaymentsScreen = () => {
       setLoading(false);
       setSummaryLoading(false);
     }
-  }, []);
+  }, [selectedFilter, currentPage]);
 
   useEffect(() => {
     fetchData();
@@ -63,8 +116,21 @@ const PaymentsScreen = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setCurrentPage(0); // Reset to first page on refresh
     await fetchData();
     setRefreshing(false);
+  };
+
+  const handleFilterChange = (filter: FilterType) => {
+    setSelectedFilter(filter);
+    setCurrentPage(0); // Reset to first page when filter changes
+    setShowFilterDropdown(false);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      setCurrentPage(newPage);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -113,6 +179,39 @@ const PaymentsScreen = () => {
       default:
         return 'wallet';
     }
+  };
+
+  const renderFilterDropdown = () => {
+    if (!showFilterDropdown) return null;
+    
+    return (
+      <View style={styles.dropdownContainer}>
+        {filterOptions.map((option) => (
+          <TouchableOpacity
+            key={option.value}
+            style={[
+              styles.dropdownItem,
+              selectedFilter === option.value && styles.dropdownItemSelected,
+            ]}
+            onPress={() => handleFilterChange(option.value)}
+          >
+            <Icon 
+              source={option.icon} 
+              size={20} 
+              color={selectedFilter === option.value ? '#3B82F6' : '#64748B'} 
+            />
+            <Text 
+              style={[
+                styles.dropdownItemText,
+                selectedFilter === option.value && styles.dropdownItemTextSelected,
+              ]}
+            >
+              {option.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
   };
 
   const renderSummaryCard = () => {
@@ -214,7 +313,7 @@ const PaymentsScreen = () => {
         )}
         <View style={styles.detailRow}>
           <Icon source="calendar" size={14} color="#64748B" />
-          <Text style={styles.detailText}>{formatDate(item.paymentDate)}</Text>
+          <Text style={styles.detailText}>{formatDate((item.paymentDate || item.dueDate) || '')}</Text>
         </View>
         {item.notes && (
           <View style={styles.detailRow}>
@@ -228,7 +327,35 @@ const PaymentsScreen = () => {
     </View>
   );
 
-  if (loading) {
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    
+    return (
+      <View style={styles.paginationContainer}>
+        <TouchableOpacity
+          style={[styles.paginationButton, currentPage === 0 && styles.paginationButtonDisabled]}
+          onPress={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+        >
+          <Icon source="chevron-left" size={20} color={currentPage === 0 ? '#94A3B8' : '#3B82F6'} />
+        </TouchableOpacity>
+        
+        <Text style={styles.paginationText}>
+          {currentPage + 1} / {totalPages}
+        </Text>
+        
+        <TouchableOpacity
+          style={[styles.paginationButton, currentPage === totalPages - 1 && styles.paginationButtonDisabled]}
+          onPress={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages - 1}
+        >
+          <Icon source="chevron-right" size={20} color={currentPage === totalPages - 1 ? '#94A3B8' : '#3B82F6'} />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  if (loading && payments.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3B82F6" />
@@ -243,7 +370,7 @@ const PaymentsScreen = () => {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Payments</Text>
-          <Text style={styles.subtitle}>{payments.length} transactions</Text>
+          <Text style={styles.subtitle}>{totalElements} records</Text>
         </View>
         <TouchableOpacity
           style={styles.addButton}
@@ -259,11 +386,34 @@ const PaymentsScreen = () => {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        {/* Filter Dropdown */}
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilterDropdown(!showFilterDropdown)}
+          >
+            <Icon source={filterOptions.find(f => f.value === selectedFilter)?.icon || 'filter'} size={20} color="#3B82F6" />
+            <Text style={styles.filterButtonText}>
+              {filterOptions.find(f => f.value === selectedFilter)?.label || 'Filter'}
+            </Text>
+            <Icon source={showFilterDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#64748B" />
+          </TouchableOpacity>
+          {renderFilterDropdown()}
+        </View>
+
         {/* Summary Cards */}
         {renderSummaryCard()}
 
         {/* Payments List */}
-        <Text style={styles.sectionTitle}>Recent Transactions</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            {filterOptions.find(f => f.value === selectedFilter)?.label || 'Recent Transactions'}
+          </Text>
+          <Text style={styles.pageInfo}>
+            Showing {payments.length} of {totalElements} records (5 per page)
+          </Text>
+        </View>
+        
         <FlatList
           data={payments}
           keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
@@ -274,10 +424,13 @@ const PaymentsScreen = () => {
             <View style={styles.emptyContainer}>
               <Icon source="credit-card-off" size={48} color="#94A3B8" />
               <Text style={styles.emptyText}>No payments found</Text>
-              <Text style={styles.emptySubText}>Tap + New to record a payment</Text>
+              <Text style={styles.emptySubText}>Try changing the filter</Text>
             </View>
           }
         />
+        
+        {/* Pagination */}
+        {renderPagination()}
       </ScrollView>
     </View>
   );
@@ -338,6 +491,68 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748B',
   },
+  
+  // Filter styles
+  filterContainer: {
+    padding: 16,
+    paddingBottom: 0,
+    position: 'relative',
+    zIndex: 100,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterButtonText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginLeft: 10,
+  },
+  dropdownContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 101,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#EFF6FF',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#64748B',
+    marginLeft: 12,
+  },
+  dropdownItemTextSelected: {
+    color: '#3B82F6',
+    fontWeight: '600',
+  },
+  
   summaryLoadingContainer: {
     padding: 16,
     alignItems: 'center',
@@ -397,17 +612,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#0F172A',
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#0F172A',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+  },
+  pageInfo: {
+    fontSize: 12,
+    color: '#94A3B8',
   },
   listContent: {
     padding: 16,
     paddingTop: 0,
-    paddingBottom: 32,
+    paddingBottom: 16,
   },
   paymentCard: {
     backgroundColor: '#FFFFFF',
@@ -516,6 +741,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#94A3B8',
     marginTop: 4,
+  },
+  
+  // Pagination styles
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 16,
+  },
+  paginationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  paginationButtonDisabled: {
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  paginationText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
   },
 });
 
