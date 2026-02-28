@@ -99,7 +99,7 @@ export interface Payment {
 
 export interface PaymentForm {
   userId: number;
-  membershipId?: number;
+  membershipPlanId?: number;
   amount: number;
   paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'ONLINE' | 'BANK_TRANSFER';
   transactionId?: string;

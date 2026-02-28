@@ -95,18 +95,18 @@ const MembershipsScreen = () => {
           <View
             style={[
               styles.statusBadge,
-              { backgroundColor: item.isActive ? '#10B98120' : '#EF444420' },
+              { backgroundColor: item.active ? '#10B98120' : '#EF444420' },
             ]}
           >
             <Icon 
-              source={item.isActive ? 'check-circle' : 'close-circle'} 
+              source={item.active ? 'check-circle' : 'close-circle'} 
               size={14} 
-              color={item.isActive ? '#10B981' : '#EF4444'} 
+              color={item.active ? '#10B981' : '#EF4444'} 
             />
             <Text
-              style={[styles.statusText, { color: item.isActive ? '#10B981' : '#EF4444' }]}
+              style={[styles.statusText, { color: item.active ? '#10B981' : '#EF4444' }]}
             >
-              {item.isActive ? 'Active' : 'Inactive'}
+              {item.active ? 'Active' : 'Inactive'}
             </Text>
           </View>
         </View>

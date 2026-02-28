@@ -114,7 +114,7 @@ const CreatePaymentScreen = () => {
     setSelectedPlan(plan);
     setFormData(prev => ({
       ...prev,
-      membershipId: plan.id,
+      membershipPlanId: plan.id,
       amount: plan.price,
     }));
   };
@@ -155,8 +155,8 @@ const CreatePaymentScreen = () => {
         notes: formData.notes || undefined,
       };
       
-      if (formData.membershipId) {
-        payload.membershipId = formData.membershipId;
+      if (formData.membershipPlanId) {
+        payload.membershipPlanId = formData.membershipPlanId;
       }
       
       await api.post('/gym/payments/create_record', payload);
