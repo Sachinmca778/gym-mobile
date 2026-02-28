@@ -86,7 +86,11 @@ export interface Payment {
   id: number;
   userId: number;
   memberName?: string;
+  memberPhone?: string;
+  memberEmail?: string;
   membershipId?: number;
+  membershipPlanId?: number;
+  membershipPlanName?: string;
   amount: number;
   paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'ONLINE' | 'BANK_TRANSFER';
   status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';

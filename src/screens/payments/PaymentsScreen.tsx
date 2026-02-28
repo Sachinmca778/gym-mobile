@@ -299,18 +299,46 @@ const PaymentsScreen = () => {
         </View>
       </View>
 
+      {/* Member Details */}
+      <View style={styles.memberDetailsContainer}>
+        <View style={styles.memberInfoRow}>
+          <Icon source="account" size={16} color="#3B82F6" />
+          <Text style={styles.memberName}>
+            {item.memberName || 'Unknown Member'}
+          </Text>
+        </View>
+        <View style={styles.memberInfoRow}>
+          <Icon source="phone" size={16} color="#64748B" />
+          <Text style={styles.memberInfoText}>
+            {item.memberPhone || 'N/A'}
+          </Text>
+        </View>
+        <View style={styles.memberInfoRow}>
+          <Icon source="email" size={16} color="#64748B" />
+          <Text style={styles.memberInfoText}>
+            {item.memberEmail || 'N/A'}
+          </Text>
+        </View>
+        {item.membershipPlanName && (
+          <View style={styles.memberInfoRow}>
+            <Icon source="card-account-details" size={16} color="#10B981" />
+            <Text style={styles.planNameText}>
+              {item.membershipPlanName}
+            </Text>
+          </View>
+        )}
+      </View>
+
       <View style={styles.amountSection}>
         <Text style={styles.currency}>₹</Text>
         <Text style={styles.amount}>{item.amount?.toLocaleString() || '0'}</Text>
       </View>
 
       <View style={styles.paymentDetails}>
-        {item.memberName && (
-          <View style={styles.detailRow}>
-            <Icon source="account" size={14} color="#64748B" />
-            <Text style={styles.detailText}>{item.memberName}</Text>
-          </View>
-        )}
+        <View style={styles.detailRow}>
+          <Icon source="identifier" size={14} color="#64748B" />
+          <Text style={styles.detailText}>ID: {item.userId}</Text>
+        </View>
         <View style={styles.detailRow}>
           <Icon source="calendar" size={14} color="#64748B" />
           <Text style={styles.detailText}>{formatDate((item.paymentDate || item.dueDate) || '')}</Text>
@@ -724,6 +752,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
   },
+  
+  // Member details styles
+  memberDetailsContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  memberInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  memberName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginLeft: 8,
+  },
+  memberInfoText: {
+    fontSize: 13,
+    color: '#64748B',
+    marginLeft: 8,
+  },
+  planNameText: {
+    fontSize: 13,
+    color: '#10B981',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
