@@ -15,18 +15,16 @@ import {
   Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Icon, Divider, RadioButton } from 'react-native-paper';
+import { Icon, RadioButton } from 'react-native-paper';
 import api from '../../api/api';
-import { MemberFormData, MembershipPlan, UserSearchResult } from '../../types';
+import { MemberFormData, UserSearchResult } from '../../types';
 import DatePicker from '../../components/DatePicker';
 
 const CreateMemberScreen = () => {
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showMembershipDropdown, setShowMembershipDropdown] = useState(false);
   
   // User selection state
   const [users, setUsers] = useState<UserSearchResult[]>([]);
@@ -35,7 +33,7 @@ const CreateMemberScreen = () => {
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
   const [userRole, setUserRole] = useState<string>('');
 
-  // Form state
+  // Form state - member only, no membership fields
   const [formData, setFormData] = useState<MemberFormData>({
     userId: undefined,
     firstName: '',
@@ -51,10 +49,6 @@ const CreateMemberScreen = () => {
     emergencyContactName: '',
     emergencyContactPhone: '',
     emergencyContactRelation: '',
-    membershipType: '',
-    startDate: '',
-    duration: '',
-    amount: '',
     medicalConditions: '',
     allergies: '',
     fitnessGoals: '',
@@ -62,14 +56,8 @@ const CreateMemberScreen = () => {
 
   // Date picker state
   const [dob, setDob] = useState<Date>(new Date());
-  const [startDate, setStartDate] = useState<Date>(new Date());
-
-  // Calculate min date (15 days ago)
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() - 15);
 
   useEffect(() => {
-    fetchMembershipPlans();
     checkUserRole();
   }, []);
 
@@ -99,19 +87,6 @@ const CreateMemberScreen = () => {
     }
   };
 
-  const fetchMembershipPlans = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/gym/membership_plans/active');
-      setMembershipPlans(response.data);
-    } catch (error) {
-      console.error('Error fetching membership plans:', error);
-      Alert.alert('Error', 'Failed to load membership plans');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleInputChange = (field: string, value: string | number | undefined) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
@@ -136,32 +111,6 @@ const CreateMemberScreen = () => {
     handleInputChange('dateOfBirth', date);
   };
 
-  const handleStartDateChange = (date: string) => {
-    handleInputChange('startDate', date);
-  };
-
-  const handleMembershipChange = (planName: string) => {
-    handleInputChange('membershipType', planName);
-    const selectedPlan = membershipPlans.find(plan => plan.name === planName);
-    if (selectedPlan) {
-      handleInputChange('duration', selectedPlan.durationMonths.toString());
-      handleInputChange('amount', selectedPlan.price.toString());
-    } else {
-      handleInputChange('duration', '');
-      handleInputChange('amount', '');
-    }
-  };
-
-  const calculateEndDate = () => {
-    if (formData.startDate && formData.duration) {
-      const start = new Date(formData.startDate);
-      const end = new Date(start);
-      end.setMonth(end.getMonth() + parseInt(formData.duration));
-      return end.toISOString().split('T')[0];
-    }
-    return '';
-  };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -171,9 +120,6 @@ const CreateMemberScreen = () => {
     if (!formData.address?.trim()) newErrors.address = 'Address is required';
     if (!formData.emergencyContactName?.trim()) newErrors.emergencyContactName = 'Emergency contact name is required';
     if (!formData.emergencyContactPhone?.trim()) newErrors.emergencyContactPhone = 'Emergency contact phone is required';
-    if (!formData.membershipType?.trim()) newErrors.membershipType = 'Membership type is required';
-    if (!formData.startDate?.trim()) newErrors.startDate = 'Start date is required';
-    if (!formData.amount?.trim()) newErrors.amount = 'Amount is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -187,7 +133,7 @@ const CreateMemberScreen = () => {
     try {
       setSubmitting(true);
       await api.post('/gym/members/create', formData);
-      Alert.alert('Success', 'Member created successfully!', [
+      Alert.alert('Success', 'Member created successfully!\n\nNote: You can assign a membership plan from the Memberships section.', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
@@ -546,164 +492,6 @@ const CreateMemberScreen = () => {
             </View>
           </View>
 
-          {/* Membership Details */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Icon source="credit-card" size={20} color="#8B5CF6" />
-              <Text style={styles.sectionTitle}>Membership Details</Text>
-            </View>
-            
-            <View style={styles.formField}>
-              <Text style={styles.label}>Membership Type *</Text>
-              
-              {/* Dropdown Button */}
-              <TouchableOpacity 
-                style={[styles.dropdownButton, errors.membershipType ? styles.inputError : {}]}
-                onPress={() => setShowMembershipDropdown(true)}
-              >
-                <View style={styles.dropdownButtonContent}>
-                  {formData.membershipType ? (
-                    <View>
-                      {(() => {
-                        const selectedPlan = membershipPlans.find(p => p.name === formData.membershipType);
-                        const monthlyPrice = selectedPlan ? Math.round(selectedPlan.price / selectedPlan.durationMonths) : 0;
-                        return (
-                          <>
-                            <Text style={styles.dropdownSelectedText}>{formData.membershipType}</Text>
-                            <Text style={styles.dropdownSelectedSubtext}>₹{monthlyPrice}/month</Text>
-                          </>
-                        );
-                      })()}
-                    </View>
-                  ) : (
-                    <Text style={styles.dropdownPlaceholder}>Select membership type</Text>
-                  )}
-                </View>
-                <Icon 
-                  source={showMembershipDropdown ? "chevron-up" : "chevron-down"} 
-                  size={24} 
-                  color="#64748B" 
-                />
-              </TouchableOpacity>
-
-              {/* Membership Dropdown Modal */}
-              <Modal
-                visible={showMembershipDropdown}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowMembershipDropdown(false)}
-              >
-                <Pressable 
-                  style={styles.modalOverlay}
-                  onPress={() => setShowMembershipDropdown(false)}
-                >
-                  <View style={styles.modalContent}>
-                    <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Select Membership Plan</Text>
-                      <TouchableOpacity onPress={() => setShowMembershipDropdown(false)}>
-                        <Icon source="close" size={24} color="#64748B" />
-                      </TouchableOpacity>
-                    </View>
-                    
-                    <ScrollView style={styles.modalList}>
-                      {membershipPlans.map((plan) => {
-                        const monthlyPrice = Math.round(plan.price / plan.durationMonths);
-                        const isSelected = formData.membershipType === plan.name;
-                        
-                        return (
-                          <TouchableOpacity
-                            key={plan.id}
-                            style={[
-                              styles.dropdownItem,
-                              isSelected && styles.dropdownItemSelected,
-                            ]}
-                            onPress={() => {
-                              handleMembershipChange(plan.name);
-                              setShowMembershipDropdown(false);
-                            }}
-                          >
-                            <View style={styles.dropdownItemContent}>
-                              <Text style={[
-                                styles.dropdownItemName,
-                                isSelected && styles.dropdownItemNameSelected,
-                              ]}>
-                                {plan.name}
-                              </Text>
-                              <Text style={styles.dropdownItemPrice}>
-                                ₹{monthlyPrice}/month • {plan.durationMonths} months
-                              </Text>
-                              {plan.description && (
-                                <Text style={styles.dropdownItemDesc} numberOfLines={2}>
-                                  {plan.description}
-                                </Text>
-                              )}
-                            </View>
-                            {isSelected && (
-                              <Icon source="check-circle" size={24} color="#3B82F6" />
-                            )}
-                          </TouchableOpacity>
-                        );
-                      })}
-                      
-                      {membershipPlans.length === 0 && (
-                        <View style={styles.noPlansContainer}>
-                          <Text style={styles.noPlansText}>No active membership plans available</Text>
-                        </View>
-                      )}
-                    </ScrollView>
-                  </View>
-                </Pressable>
-              </Modal>
-              
-              {errors.membershipType && <Text style={styles.errorText}>{errors.membershipType}</Text>}
-            </View>
-
-            <View style={styles.formRow}>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Start Date *</Text>
-                <DatePicker
-                  label="Start Date"
-                  value={formData.startDate}
-                  onChange={handleStartDateChange}
-                  minimumDate={minDate}
-                  error={!!errors.startDate}
-                />
-              </View>
-              
-              <View style={styles.formField}>
-                <Text style={styles.label}>Duration (months)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Duration"
-                  value={formData.duration}
-                  editable={false}
-                />
-              </View>
-            </View>
-
-            <View style={styles.formField}>
-              <Text style={styles.label}>Amount (₹) *</Text>
-              <TextInput
-                style={[styles.input, errors.amount ? styles.inputError : {}]}
-                placeholder="Amount"
-                value={formData.amount}
-                onChangeText={(value) => handleInputChange('amount', value)}
-                keyboardType="numeric"
-                editable={!formData.membershipType}
-              />
-              {errors.amount && <Text style={styles.errorText}>{errors.amount}</Text>}
-            </View>
-
-            {formData.startDate && formData.duration && (
-              <View style={styles.infoBox}>
-                <Icon source="information" size={20} color="#3B82F6" />
-                <Text style={styles.infoText}>
-                  Membership End Date: {calculateEndDate()}
-                </Text>
-              </View>
-            )}
-          </View>
-
           {/* Health Information */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -749,6 +537,14 @@ const CreateMemberScreen = () => {
                 textAlignVertical="top"
               />
             </View>
+          </View>
+
+          {/* Note about membership */}
+          <View style={styles.infoBox}>
+            <Icon source="information" size={20} color="#3B82F6" />
+            <Text style={styles.infoText}>
+              After creating the member, you can assign a membership plan from the Memberships section.
+            </Text>
           </View>
 
           {/* Submit Button */}
@@ -1006,13 +802,14 @@ const styles = StyleSheet.create({
     borderColor: '#3B82F6',
     borderRadius: 8,
     padding: 12,
-    marginTop: 12,
+    marginBottom: 16,
   },
   infoText: {
     fontSize: 14,
     color: '#3B82F6',
     marginLeft: 8,
     fontWeight: '500',
+    flex: 1,
   },
   buttonContainer: {
     paddingVertical: 16,

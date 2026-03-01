@@ -220,6 +220,7 @@ export interface RegisterRequest {
   gymId?: number;
 }
 
+// Member form data - without membership fields (membership is now separate)
 export interface MemberFormData {
   // User reference (for admin selecting user)
   userId?: number;
@@ -243,11 +244,6 @@ export interface MemberFormData {
   emergencyContactPhone: string;
   emergencyContactRelation: string;
   
-  // Membership
-  membershipType: string;
-  startDate: string;
-  duration: string;
-  amount: string;
   
   // Health Information
   medicalConditions: string;
