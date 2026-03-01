@@ -279,11 +279,11 @@ const PaymentsScreen = () => {
         
         {/* LEFT: Member Name */}
         <View style={{ flex: 1 }}>
-  <Text style={styles.memberName} numberOfLines={1}>
-    {item.memberName || 'Unknown Member'}
-    <Text style={styles.userIdInline}>  •  #{item.userId}</Text>
-  </Text>
-</View>
+          <Text style={styles.memberName} numberOfLines={1}>
+            {item.memberName || 'Unknown Member'}
+            <Text style={styles.userIdInline}>  •  #{item.userId}</Text>
+          </Text>
+        </View>
   
         {/* RIGHT: Amount */}
         <View style={{ alignItems: 'flex-end' }}>
