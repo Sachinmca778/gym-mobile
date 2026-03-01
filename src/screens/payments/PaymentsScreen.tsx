@@ -274,84 +274,80 @@ const PaymentsScreen = () => {
 
   const renderPaymentItem = ({ item }: { item: Payment }) => (
     <View style={styles.paymentCard}>
-      <View style={styles.paymentHeader}>
-        <View style={styles.methodContainer}>
-          <View style={styles.methodIconContainer}>
-            <Icon source={getMethodIcon(item.paymentMethod) as any} size={20} color="#3B82F6" />
-          </View>
-          <View>
-            <Text style={styles.methodText}>{item.paymentMethod?.replace('_', ' ')}</Text>
-            {item.transactionId && (
-              <Text style={styles.transactionId}>{item.transactionId}</Text>
-            )}
-          </View>
+  
+      <View style={styles.rowBetween}>
+        
+        {/* LEFT: Member Name */}
+        <View style={{ flex: 1 }}>
+  <Text style={styles.memberName} numberOfLines={1}>
+    {item.memberName || 'Unknown Member'}
+    <Text style={styles.userIdInline}>  •  #{item.userId}</Text>
+  </Text>
+</View>
+  
+        {/* RIGHT: Amount */}
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.amountText}>
+            ₹ {item.amount?.toLocaleString() || '0'}
+          </Text>
+          <Text style={styles.dateText}>
+            {formatDate((item.paymentDate || item.dueDate) || '')}
+          </Text>
         </View>
+      </View>
+  
+      {/* Middle Row */}
+      <View style={[styles.rowBetween, { marginTop: 8 }]}>
+  
+        {/* LEFT: Method + Txn */}
+        <View style={styles.row}>
+          <Icon source={getMethodIcon(item.paymentMethod) as any} size={14} color="#3B82F6" />
+          <Text style={styles.smallText}>
+            {item.paymentMethod?.replace('_', ' ')}
+          </Text>
+          {item.transactionId && (
+            <Text style={styles.subText} numberOfLines={1}>
+              • {item.transactionId}
+            </Text>
+          )}
+        </View>
+  
+        {/* RIGHT: Status */}
         <View
           style={[
-            styles.statusBadge,
+            styles.statusBadgeCompact,
             { backgroundColor: `${getStatusColor(item.status)}15` },
           ]}
         >
-          <View style={[styles.statusDot, { backgroundColor: getStatusColor(item.status) }]} />
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+          <Text
+            style={[
+              styles.statusTextCompact,
+              { color: getStatusColor(item.status) },
+            ]}
+          >
             {item.status}
           </Text>
         </View>
       </View>
-
-      {/* Member Details */}
-      <View style={styles.memberDetailsContainer}>
-        <View style={styles.memberInfoRow}>
-          <Icon source="account" size={16} color="#3B82F6" />
-          <Text style={styles.memberName}>
-            {item.memberName || 'Unknown Member'}
-          </Text>
-        </View>
-        <View style={styles.memberInfoRow}>
-          <Icon source="phone" size={16} color="#64748B" />
-          <Text style={styles.memberInfoText}>
-            {item.memberPhone || 'N/A'}
-          </Text>
-        </View>
-        <View style={styles.memberInfoRow}>
-          <Icon source="email" size={16} color="#64748B" />
-          <Text style={styles.memberInfoText}>
-            {item.memberEmail || 'N/A'}
-          </Text>
-        </View>
+  
+      {/* Bottom Row - Contact & Plan */}
+      <View style={[styles.row, { marginTop: 6, flexWrap: 'wrap' }]}>
+        {item.memberPhone && (
+          <Text style={styles.subText}>📞 {item.memberPhone}</Text>
+        )}
+        {item.memberEmail && (
+          <Text style={styles.subText}> • {item.memberEmail}</Text>
+        )}
         {item.membershipPlanName && (
-          <View style={styles.memberInfoRow}>
-            <Icon source="card-account-details" size={16} color="#10B981" />
-            <Text style={styles.planNameText}>
-              {item.membershipPlanName}
-            </Text>
-          </View>
+          <Text style={styles.planText}> • {item.membershipPlanName}</Text>
         )}
-      </View>
-
-      <View style={styles.amountSection}>
-        <Text style={styles.currency}>₹</Text>
-        <Text style={styles.amount}>{item.amount?.toLocaleString() || '0'}</Text>
-      </View>
-
-      <View style={styles.paymentDetails}>
-        <View style={styles.detailRow}>
-          <Icon source="identifier" size={14} color="#64748B" />
-          <Text style={styles.detailText}>ID: {item.userId}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Icon source="calendar" size={14} color="#64748B" />
-          <Text style={styles.detailText}>{formatDate((item.paymentDate || item.dueDate) || '')}</Text>
-        </View>
         {item.notes && (
-          <View style={styles.detailRow}>
-            <Icon source="text" size={14} color="#64748B" />
-            <Text style={styles.detailText} numberOfLines={1}>
-              {item.notes}
-            </Text>
-          </View>
+          <Text style={styles.subText} numberOfLines={1}>
+            {' '}• {item.notes}
+          </Text>
         )}
       </View>
+  
     </View>
   );
 
@@ -828,6 +824,61 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#64748B',
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  
+  amountText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#3B82F6',
+  },
+  
+  dateText: {
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+  
+  smallText: {
+    fontSize: 12,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  
+  subText: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  
+  planText: {
+    fontSize: 11,
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  
+  statusBadgeCompact: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  
+  statusTextCompact: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  userIdInline: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '400',
   },
 });
 
