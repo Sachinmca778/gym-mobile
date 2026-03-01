@@ -17,7 +17,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Icon, Divider, RadioButton } from 'react-native-paper';
 import api from '../../api/api';
-import { MemberFormData, MembershipPlan } from '../../types';
+import { MemberFormData, MembershipPlan, UserSearchResult } from '../../types';
 import DatePicker from '../../components/DatePicker';
 
 const CreateMemberScreen = () => {
@@ -27,9 +27,17 @@ const CreateMemberScreen = () => {
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showMembershipDropdown, setShowMembershipDropdown] = useState(false);
+  
+  // User selection state
+  const [users, setUsers] = useState<UserSearchResult[]>([]);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [userLoading, setUserLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
+  const [userRole, setUserRole] = useState<string>('');
 
   // Form state
   const [formData, setFormData] = useState<MemberFormData>({
+    userId: undefined,
     firstName: '',
     lastName: '',
     email: '',
@@ -52,7 +60,7 @@ const CreateMemberScreen = () => {
     fitnessGoals: '',
   });
 
-  // Date picker state (no longer needed with web-compatible picker)
+  // Date picker state
   const [dob, setDob] = useState<Date>(new Date());
   const [startDate, setStartDate] = useState<Date>(new Date());
 
@@ -62,7 +70,34 @@ const CreateMemberScreen = () => {
 
   useEffect(() => {
     fetchMembershipPlans();
+    checkUserRole();
   }, []);
+
+  const checkUserRole = async () => {
+    try {
+      const role = localStorage.getItem('userRole');
+      setUserRole(role || '');
+      
+      // If admin/manager/receptionist, fetch users list
+      if (role === 'ADMIN' || role === 'MANAGER' || role === 'RECEPTIONIST' || role === 'SUPER_USER') {
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setUserLoading(true);
+      const response = await api.get('/gym/users/all');
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setUserLoading(false);
+    }
+  };
 
   const fetchMembershipPlans = async () => {
     try {
@@ -77,13 +112,24 @@ const CreateMemberScreen = () => {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | number | undefined) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleUserSelect = (user: UserSearchResult) => {
+    setSelectedUser(user);
+    handleInputChange('userId', user.id);
+    // Auto-populate form from user data
+    handleInputChange('firstName', user.firstName);
+    handleInputChange('lastName', user.lastName);
+    handleInputChange('email', user.email);
+    handleInputChange('phone', user.phone);
+    setShowUserDropdown(false);
   };
 
   const handleDOBChange = (date: string) => {
@@ -119,15 +165,15 @@ const CreateMemberScreen = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.emergencyContactName.trim()) newErrors.emergencyContactName = 'Emergency contact name is required';
-    if (!formData.emergencyContactPhone.trim()) newErrors.emergencyContactPhone = 'Emergency contact phone is required';
-    if (!formData.membershipType.trim()) newErrors.membershipType = 'Membership type is required';
-    if (!formData.startDate.trim()) newErrors.startDate = 'Start date is required';
-    if (!formData.amount.trim()) newErrors.amount = 'Amount is required';
+    if (!formData.firstName?.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.lastName?.trim()) newErrors.lastName = 'Last name is required';
+    if (!formData.phone?.trim()) newErrors.phone = 'Phone number is required';
+    if (!formData.address?.trim()) newErrors.address = 'Address is required';
+    if (!formData.emergencyContactName?.trim()) newErrors.emergencyContactName = 'Emergency contact name is required';
+    if (!formData.emergencyContactPhone?.trim()) newErrors.emergencyContactPhone = 'Emergency contact phone is required';
+    if (!formData.membershipType?.trim()) newErrors.membershipType = 'Membership type is required';
+    if (!formData.startDate?.trim()) newErrors.startDate = 'Start date is required';
+    if (!formData.amount?.trim()) newErrors.amount = 'Amount is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -152,7 +198,7 @@ const CreateMemberScreen = () => {
     }
   };
 
-  if (loading) {
+  if (loading || userLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3B82F6" />
@@ -160,6 +206,9 @@ const CreateMemberScreen = () => {
       </View>
     );
   }
+
+  // Determine if user can select from user list
+  const canSelectUser = userRole === 'ADMIN' || userRole === 'MANAGER' || userRole === 'RECEPTIONIST' || userRole === 'SUPER_USER';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -171,8 +220,130 @@ const CreateMemberScreen = () => {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Add New Member</Text>
-            <Text style={styles.subtitle}>Register a new gym member</Text>
+            <Text style={styles.subtitle}>
+              {canSelectUser 
+                ? 'Select a user or fill form manually' 
+                : 'Register as a new gym member'}
+            </Text>
           </View>
+
+          {/* User Selection - Only for Admin/Manager/Receptionist */}
+          {canSelectUser && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Icon source="account-multiple" size={20} color="#3B82F6" />
+                <Text style={styles.sectionTitle}>Select User (Optional)</Text>
+              </View>
+              
+              <View style={styles.formField}>
+                <Text style={styles.label}>Select from existing users</Text>
+                
+                {/* User Dropdown Button */}
+                <TouchableOpacity 
+                  style={styles.dropdownButton}
+                  onPress={() => setShowUserDropdown(true)}
+                >
+                  <View style={styles.dropdownButtonContent}>
+                    {selectedUser ? (
+                      <View>
+                        <Text style={styles.dropdownSelectedText}>
+                          {selectedUser.firstName} {selectedUser.lastName}
+                        </Text>
+                        <Text style={styles.dropdownSelectedSubtext}>
+                          {selectedUser.email} • {selectedUser.role}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.dropdownPlaceholder}>
+                        Tap to select a user (form will auto-fill)
+                      </Text>
+                    )}
+                  </View>
+                  <Icon 
+                    source={showUserDropdown ? "chevron-up" : "chevron-down"} 
+                    size={24} 
+                    color="#64748B" 
+                  />
+                </TouchableOpacity>
+
+                {/* User Dropdown Modal */}
+                <Modal
+                  visible={showUserDropdown}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setShowUserDropdown(false)}
+                >
+                  <Pressable 
+                    style={styles.modalOverlay}
+                    onPress={() => setShowUserDropdown(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Select User</Text>
+                        <TouchableOpacity onPress={() => setShowUserDropdown(false)}>
+                          <Icon source="close" size={24} color="#64748B" />
+                        </TouchableOpacity>
+                      </View>
+                      
+                      <ScrollView style={styles.modalList}>
+                        {users.map((user) => {
+                          const isSelected = selectedUser?.id === user.id;
+                          
+                          return (
+                            <TouchableOpacity
+                              key={user.id}
+                              style={[
+                                styles.dropdownItem,
+                                isSelected && styles.dropdownItemSelected,
+                              ]}
+                              onPress={() => handleUserSelect(user)}
+                            >
+                              <View style={styles.dropdownItemContent}>
+                                <Text style={[
+                                  styles.dropdownItemName,
+                                  isSelected && styles.dropdownItemNameSelected,
+                                ]}>
+                                  {user.firstName} {user.lastName}
+                                </Text>
+                                <Text style={styles.dropdownItemPrice}>
+                                  {user.email}
+                                </Text>
+                                <Text style={styles.dropdownItemDesc}>
+                                  Role: {user.role}
+                                </Text>
+                              </View>
+                              {isSelected && (
+                                <Icon source="check-circle" size={24} color="#3B82F6" />
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                        
+                        {users.length === 0 && (
+                          <View style={styles.noPlansContainer}>
+                            <Text style={styles.noPlansText}>No users available</Text>
+                          </View>
+                        )}
+                      </ScrollView>
+                    </View>
+                  </Pressable>
+                </Modal>
+                
+                {selectedUser && (
+                  <TouchableOpacity 
+                    style={styles.clearButton}
+                    onPress={() => {
+                      setSelectedUser(null);
+                      handleInputChange('userId', undefined);
+                    }}
+                  >
+                    <Icon source="close-circle" size={16} color="#EF4444" />
+                    <Text style={styles.clearButtonText}>Clear selection</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
 
           {/* Personal Information */}
           <View style={styles.section}>
@@ -233,7 +404,6 @@ const CreateMemberScreen = () => {
 
             <View style={styles.formRow}>
               <View style={styles.formField}>
-                <Text style={styles.label}>Date of Birth</Text>
                 <DatePicker
                   label="Date of Birth"
                   value={formData.dateOfBirth}
@@ -416,7 +586,7 @@ const CreateMemberScreen = () => {
                 />
               </TouchableOpacity>
 
-              {/* Dropdown Modal */}
+              {/* Membership Dropdown Modal */}
               <Modal
                 visible={showMembershipDropdown}
                 transparent
@@ -696,21 +866,6 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     marginTop: 4,
   },
-  dateInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  dateText: {
-    marginLeft: 8,
-    fontSize: 16,
-    // color: formData.dateOfBirth ? '#0F172A' : '#94A3B8',
-  },
   radioGroup: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -723,36 +878,6 @@ const styles = StyleSheet.create({
   radioLabel: {
     fontSize: 14,
     color: '#0F172A',
-  },
-  pickerContainer: {
-    gap: 8,
-  },
-  pickerOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 12,
-  },
-  pickerOptionSelected: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EFF6FF',
-  },
-  planInfo: {
-    flex: 1,
-  },
-  planName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
-  },
-  planPrice: {
-    fontSize: 14,
-    color: '#64748B',
-    marginTop: 2,
   },
   // Dropdown styles
   dropdownButton: {
@@ -862,6 +987,16 @@ const styles = StyleSheet.create({
   noPlansText: {
     fontSize: 14,
     color: '#64748B',
+  },
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  clearButtonText: {
+    fontSize: 14,
+    color: '#EF4444',
+    marginLeft: 4,
   },
   infoBox: {
     flexDirection: 'row',

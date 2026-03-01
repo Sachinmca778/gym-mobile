@@ -68,14 +68,14 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
   ADMIN: {
     // Navigation tabs
     canViewDashboard: true,
-    canViewMembers: false,
+    canViewMembers: true,
     canViewAttendance: false,
     canViewPayments: true,
     canViewProfile: true,
     canManageUsers: true,
 
     // Screen access
-    canCreateMember: false,
+    canCreateMember: true,
     canEditMember: true,
     canViewMemberDetails: true,
     canAssignMembership: true,

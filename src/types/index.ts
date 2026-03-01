@@ -221,6 +221,9 @@ export interface RegisterRequest {
 }
 
 export interface MemberFormData {
+  // User reference (for admin selecting user)
+  userId?: number;
+  
   // Personal Information
   firstName: string;
   lastName: string;
